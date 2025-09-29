@@ -85,6 +85,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .map-node{border:1px solid var(--border);border-radius:12px;padding:10px;background:#111720;display:flex;flex-direction:column;gap:6px}
 .map-node[data-locked="true"]{opacity:.45;pointer-events:none}
 .enemy-card{border:1px solid var(--border);border-radius:12px;padding:10px;background:#111720;display:flex;flex-direction:column;gap:6px}
+.enemy-card[data-featured="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 0 18px rgba(106,169,255,0.25)}
 .log{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;padding:10px;background:#0f141c;display:flex;flex-direction:column;gap:6px}
 .class-portrait{width:96px;height:96px;image-rendering:pixelated;border:1px solid var(--border);border-radius:10px;background:#0f141c;display:block;margin-bottom:8px}
 /* === Arena === */
@@ -202,6 +203,60 @@ const INVENTORY_WINDOW = 96;
 const MAX_TOASTS = 6;
 const MAX_LOG_LINES = 12;
 
+const RESTED_XP_MAX = 600;
+const RESTED_XP_PER_HOUR = 48;
+const RESTED_XP_BONUS_MULT = 0.5;
+const RESTED_XP_TICK_MS = 60 * 60 * 1000;
+const MOMENTUM_STREAK_STEP = 3;
+const FEATURED_STOCK_INTERVAL = 45 * 60 * 1000;
+
+function ensureFundamentalState(state){
+  if(!state || !state.player || !state.world) return;
+  state.player.meta=state.player.meta||{};
+  const meta=state.player.meta;
+  if(!meta.restedXP){
+    meta.restedXP={ pool:Math.round(RESTED_XP_PER_HOUR*2), lastTick:now() };
+  }
+  meta.restedXP.pool=clamp(meta.restedXP.pool||0,0,RESTED_XP_MAX);
+  meta.restedXP.lastTick=meta.restedXP.lastTick||now();
+
+  state.world.fundamentals=state.world.fundamentals||{};
+  const fundamentals=state.world.fundamentals;
+  fundamentals.streak=fundamentals.streak||0;
+  fundamentals.momentumBonus=clamp(fundamentals.momentumBonus||0,0,0.5);
+  fundamentals.eliteCharge=fundamentals.eliteCharge||0;
+  fundamentals.eliteReady=!!fundamentals.eliteReady;
+  fundamentals.nextFeaturedAt=fundamentals.nextFeaturedAt||now()+FEATURED_STOCK_INTERVAL;
+}
+
+function applyFundamentalEnhancements(state,context='finalize'){
+  ensureFundamentalState(state);
+  const rested=state.player.meta.restedXP;
+  const elapsed=now()-rested.lastTick;
+  if(elapsed>=RESTED_XP_TICK_MS){
+    const ticks=Math.floor(elapsed/RESTED_XP_TICK_MS);
+    rested.pool=clamp(rested.pool+(ticks*RESTED_XP_PER_HOUR),0,RESTED_XP_MAX);
+    rested.lastTick+=ticks*RESTED_XP_TICK_MS;
+  }
+
+  if(state.player.class==='Knight' && !state.player.abilities.some(a=>a.key==='rupture')){
+    state.player.abilities.push(abilityClone('rupture'));
+  }
+  if(state.player.class==='Mage' && !state.player.abilities.some(a=>a.key==='astralNova')){
+    state.player.abilities.push(abilityClone('astralNova'));
+  }
+  if(state.player.class==='Archer' && !state.player.abilities.some(a=>a.key==='rainOfArrows')){
+    state.player.abilities.push(abilityClone('rainOfArrows'));
+  }
+
+  if(context==='finalize' || context==='migrate'){
+    state.player.derived=computeDerived(state.player);
+    state.player.power=state.player.derived.power;
+  }
+
+  return state;
+}
+
 const KEY_ACTIONS = [
   {id:'hub',label:'Go Hub',default:'H'},
   {id:'map',label:'Go Map',default:'M'},
@@ -286,14 +341,17 @@ const ABILITY_LIBRARY={
   shieldBash:{key:'shieldBash',name:'Shield Bash',cost:5,cd:2,scale:{str:0.95},tags:['physical','stun'],apply:{stun:1},desc:'Bash the target to stun.'},
   battleCry:{key:'battleCry',name:'Battle Cry',cost:6,cd:3,tags:['buff'],apply:{shield:18},desc:'Raise a shield of will and power.'},
   guardStance:{key:'guardStance',name:'Guard Stance',cost:0,cd:3,tags:['buff'],apply:{shield:25},desc:'Brace to absorb incoming damage.'},
+  rupture:{key:'rupture',name:'Rupture',cost:5,cd:2,scale:{str:1.05},tags:['physical','bleed','vuln'],apply:{bleed:3},desc:'Expose an enemy to deep wounds, applying bleed and vulnerability.'},
   fireball:{key:'fireball',name:'Fireball',cost:6,cd:0,scale:{int:1.2},tags:['fire'],apply:{burn:2},desc:'Launch a fireball that ignites foes.'},
   lightning:{key:'lightning',name:'Arc Lightning',cost:8,cd:2,scale:{int:1.5},tags:['shock','critBoost'],desc:'High burst with elevated crit chance.'},
   iceShard:{key:'iceShard',name:'Ice Shard',cost:7,cd:2,scale:{int:1.1},tags:['ice','stun'],apply:{stun:1},desc:'Shard that can freeze foes.'},
   renew:{key:'renew',name:'Renew',cost:7,cd:2,tags:['heal'],desc:'Restore vitality based on intellect.'},
+  astralNova:{key:'astralNova',name:'Astral Nova',cost:10,cd:3,scale:{int:1.15,sp:0.5},tags:['shock','multi','critBoost'],apply:{stun:1},desc:'Detonate charged mana to strike all foes; excels against elite threats.'},
   snipe:{key:'snipe',name:'Snipe',cost:4,cd:0,scale:{str:1.0,sp:0.4},tags:['physical','critBoost'],desc:'Precise shot with high crit potential.'},
   multiShot:{key:'multiShot',name:'Multi Shot',cost:7,cd:2,scale:{str:0.9},tags:['physical','multi'],desc:'Loose several arrows.'},
   smokeBomb:{key:'smokeBomb',name:'Smoke Bomb',cost:5,cd:3,tags:['buff'],apply:{shield:15},desc:'Gain cover to avoid damage.'},
   rapidFire:{key:'rapidFire',name:'Rapid Fire',cost:6,cd:2,scale:{str:0.6,sp:0.6},tags:['physical'],desc:'Rapid barrage of arrows.'},
+  rainOfArrows:{key:'rainOfArrows',name:'Rain of Arrows',cost:7,cd:3,scale:{sp:1.0},tags:['physical','multi'],desc:'Saturate an area with arrows, punishing bleeding enemies.'},
   sear:{key:'sear',name:'Sear',cost:5,cd:1,scale:{int:0.9},tags:['fire','vuln'],apply:{burn:1},desc:'Ignite and make foes vulnerable.'},
   quake:{key:'quake',name:'Quake',cost:9,cd:3,scale:{str:1.3},tags:['physical','multi'],desc:'Ground slam hitting multiple times.'},
   frostArmor:{key:'frostArmor',name:'Frost Armor',cost:6,cd:3,tags:['buff'],apply:{shield:22},desc:'Cold barrier to absorb damage.'},
@@ -303,9 +361,9 @@ const ABILITY_LIBRARY={
 function abilityClone(key){return {...ABILITY_LIBRARY[key],cooldown:0};}
 
 const CLASS_DEFS={
-  Knight:{base:{str:10,sta:11,int:3,sp:4},baseHP:150,baseMP:40,description:'Armored juggernauts that dominate melees.',abilityKeys:['slash','shieldBash','battleCry','guardStance']},
-  Mage:{base:{str:3,sta:7,int:13,sp:7},baseHP:110,baseMP:90,description:'Masters of the arcane wielding devastating spells.',abilityKeys:['fireball','lightning','iceShard','renew']},
-  Archer:{base:{str:8,sta:9,int:6,sp:11},baseHP:130,baseMP:60,description:'Swift hunters that rely on critical strikes.',abilityKeys:['snipe','multiShot','smokeBomb','rapidFire']}
+  Knight:{base:{str:10,sta:11,int:3,sp:4},baseHP:150,baseMP:40,description:'Armored juggernauts that dominate melees.',abilityKeys:['slash','shieldBash','battleCry','guardStance','rupture']},
+  Mage:{base:{str:3,sta:7,int:13,sp:7},baseHP:110,baseMP:90,description:'Masters of the arcane wielding devastating spells.',abilityKeys:['fireball','lightning','iceShard','renew','astralNova']},
+  Archer:{base:{str:8,sta:9,int:6,sp:11},baseHP:130,baseMP:60,description:'Swift hunters that rely on critical strikes.',abilityKeys:['snipe','multiShot','smokeBomb','rapidFire','rainOfArrows']}
 };
 
 const ENEMY_ARCHETYPES={
@@ -343,7 +401,7 @@ const REGIONS=[
 const LOOT_TABLE=[
   {tier:1,slots:['weapon','head','hands','chest'],consumables:['potionMinor']},
   {tier:4,slots:['weapon','legs','waist','trinket1'],consumables:['potionMinor','etherMinor']},
-  {tier:7,slots:['weapon','feet','cloak','trinket2'],consumables:['potionGreater','etherGreater']},
+  {tier:7,slots:['weapon','feet','cloak','trinket2'],consumables:['potionGreater','etherGreater','momentumDraught']},
   {tier:10,slots:['weapon','head','chest','trinket1'],consumables:['potionGreater','etherGreater']},
   {tier:13,slots:['weapon','cloak','trinket1','trinket2'],consumables:['elixirPrime']},
   {tier:15,slots:['weapon','trinket1','trinket2'],consumables:['elixirPrime']}
@@ -354,7 +412,8 @@ const CONSUMABLES={
   etherMinor:{name:'Minor Ether',stackKey:'etherMinor',rarity:'common',maxStack:10,value:20,tier:2,type:'ether',effect:p=>{const restore=Math.round(18+p.level*3);const before=p.mp;p.mp=clamp(p.mp+restore,0,p.derived.mpMax);return `Recovered ${p.mp-before} MP`; }},
   potionGreater:{name:'Greater Potion',stackKey:'potionGreater',rarity:'rare',maxStack:6,value:46,tier:6,type:'potion',effect:p=>{const boost=p._mods?.potionBoost||0;const heal=Math.round((60+p.level*6)*(1+boost));const before=p.hp;p.hp=clamp(p.hp+heal,0,p.derived.hpMax);return `Recovered ${p.hp-before} HP`; }},
   etherGreater:{name:'Greater Ether',stackKey:'etherGreater',rarity:'rare',maxStack:6,value:48,tier:6,type:'ether',effect:p=>{const restore=Math.round(55+p.level*5);const before=p.mp;p.mp=clamp(p.mp+restore,0,p.derived.mpMax);return `Recovered ${p.mp-before} MP`; }},
-  elixirPrime:{name:'Prime Elixir',stackKey:'elixirPrime',rarity:'legend',maxStack:3,value:120,tier:12,type:'elixir',effect:p=>{const heal=Math.round(p.derived.hpMax*0.4);const mp=Math.round(p.derived.mpMax*0.4);const hBefore=p.hp;const mBefore=p.mp;p.hp=clamp(p.hp+heal,0,p.derived.hpMax);p.mp=clamp(p.mp+mp,0,p.derived.mpMax);return `Recovered ${p.hp-hBefore} HP and ${p.mp-mBefore} MP`; }}
+  elixirPrime:{name:'Prime Elixir',stackKey:'elixirPrime',rarity:'legend',maxStack:3,value:120,tier:12,type:'elixir',effect:p=>{const heal=Math.round(p.derived.hpMax*0.4);const mp=Math.round(p.derived.mpMax*0.4);const hBefore=p.hp;const mBefore=p.mp;p.hp=clamp(p.hp+heal,0,p.derived.hpMax);p.mp=clamp(p.mp+mp,0,p.derived.mpMax);return `Recovered ${p.hp-hBefore} HP and ${p.mp-mBefore} MP`; }},
+  momentumDraught:{name:'Momentum Draught',stackKey:'momentumDraught',rarity:'epic',maxStack:3,value:140,tier:7,type:'tonic',effect:p=>{p.statuses=p.statuses||{shield:0,burn:0,bleed:0,stun:0,weaken:0,vuln:0,haste:0};p._mods=p._mods||{};p.statuses.haste=Math.min(3,(p.statuses.haste||0)+2);p._mods.quickCharge=Math.min(6,(p._mods.quickCharge||0)+3);return 'Momentum surges: haste +2 and quick actions recharge faster.'; }}
 };
 
 const QUEST_LIBRARY=[
@@ -405,7 +464,7 @@ const State={
 /* =========================================================================================
    Save/Load/Migration (3 slots + export/import)
 ========================================================================================= */
-function migrate(data){ if(!data) return null; ensurePlayerShape(data.player); ensureWorldShape(data.world); if(!Array.isArray(data.meta?.changeLog)) data.meta.changeLog=[...CHANGE_LOG]; return data; }
+function migrate(data){ if(!data) return null; ensurePlayerShape(data.player); ensureWorldShape(data.world); applyFundamentalEnhancements(data,'migrate'); if(!Array.isArray(data.meta?.changeLog)) data.meta.changeLog=[...CHANGE_LOG]; return data; }
 function loadSettings(){
   try{
     const raw=localStorage.getItem(SAVE_KEY);
@@ -471,6 +530,9 @@ function ensurePlayerShape(player){
   player.titles=player.titles||['Initiate'];
   player.achievements=player.achievements||{};
   player.meta=player.meta||{bossKills:0};
+  if(!player.meta.restedXP) player.meta.restedXP={pool:Math.round(RESTED_XP_PER_HOUR*2),lastTick:now()};
+  player.meta.restedXP.pool=clamp(player.meta.restedXP.pool||0,0,RESTED_XP_MAX);
+  player.meta.restedXP.lastTick=player.meta.restedXP.lastTick||now();
   player.kills=player.kills||0; player.deaths=player.deaths||0; player.goldEarned=player.goldEarned||0; player.nodesCleared=player.nodesCleared||0;
   player.quickSlots=player.quickSlots||[null,null,null];
   player._mods=player._mods||{};
@@ -492,11 +554,17 @@ function ensureWorldShape(world){
   world.pendingResults=world.pendingResults||null;
   world.codex=world.codex||{enemies:{},sets:{}};
   world.discoveredRegions=world.discoveredRegions||[0];
+  world.fundamentals=world.fundamentals||{streak:0,momentumBonus:0,eliteCharge:0,eliteReady:false,nextFeaturedAt:now()+FEATURED_STOCK_INTERVAL};
+  world.fundamentals.streak=world.fundamentals.streak||0;
+  world.fundamentals.momentumBonus=clamp(world.fundamentals.momentumBonus||0,0,0.5);
+  world.fundamentals.eliteCharge=world.fundamentals.eliteCharge||0;
+  world.fundamentals.eliteReady=!!world.fundamentals.eliteReady;
+  world.fundamentals.nextFeaturedAt=world.fundamentals.nextFeaturedAt||now()+FEATURED_STOCK_INTERVAL;
 }
-function finalizeState(state){ ensurePlayerShape(state.player); ensureWorldShape(state.world); state.version=VERSION; state.meta=state.meta||{}; if(!Array.isArray(state.meta.changeLog)) state.meta.changeLog=[...CHANGE_LOG]; state.meta.last=now(); return state; }
-function basePlayer(name='Hero',klass='Knight'){ const cls=CLASS_DEFS[klass]||CLASS_DEFS.Knight; return{ id:id(),name,class:klass,level:1,xp:0,gold:120, stats:{...cls.base},baseHP:cls.baseHP,baseMP:cls.baseMP,hp:cls.baseHP,mp:cls.baseMP, skillPoints:0,abilities:cls.abilityKeys.map(abilityClone),equipment:Object.fromEntries(EQUIP_SLOT_KEYS.map(s=>[s,null])), inventory:[],invSize:32,statuses:{shield:0,burn:0,bleed:0,stun:0,weaken:0,vuln:0,haste:0},skills:[],titles:['Initiate'],achievements:{},kills:0,deaths:0,goldEarned:0,nodesCleared:0, meta:{bossKills:0},quickSlots:[null,null,null],_mods:{},derived:null,power:0 }; }
+function finalizeState(state){ ensurePlayerShape(state.player); ensureWorldShape(state.world); applyFundamentalEnhancements(state,'finalize'); state.version=VERSION; state.meta=state.meta||{}; if(!Array.isArray(state.meta.changeLog)) state.meta.changeLog=[...CHANGE_LOG]; state.meta.last=now(); return state; }
+function basePlayer(name='Hero',klass='Knight'){ const cls=CLASS_DEFS[klass]||CLASS_DEFS.Knight; return{ id:id(),name,class:klass,level:1,xp:0,gold:120, stats:{...cls.base},baseHP:cls.baseHP,baseMP:cls.baseMP,hp:cls.baseHP,mp:cls.baseMP, skillPoints:0,abilities:cls.abilityKeys.map(abilityClone),equipment:Object.fromEntries(EQUIP_SLOT_KEYS.map(s=>[s,null])), inventory:[],invSize:32,statuses:{shield:0,burn:0,bleed:0,stun:0,weaken:0,vuln:0,haste:0},skills:[],titles:['Initiate'],achievements:{},kills:0,deaths:0,goldEarned:0,nodesCleared:0, meta:{bossKills:0,restedXP:{pool:Math.round(RESTED_XP_PER_HOUR*2),lastTick:now()}},quickSlots:[null,null,null],_mods:{},derived:null,power:0 }; }
 function instantiateQuests(){return QUEST_LIBRARY.slice(0,3).map(q=>({...q,progress:0,completed:false}));}
-function baseWorld(){return{regionIndex:0,nodesCleared:0,lastNode:1,quests:instantiateQuests(),battle:null,shop:[],shopBuyback:[],shopNextRestockAt:now()+RESTOCK_COOLDOWN_MS,pendingResults:null,codex:{enemies:{},sets:{}},discoveredRegions:[0]};}
+function baseWorld(){return{regionIndex:0,nodesCleared:0,lastNode:1,quests:instantiateQuests(),battle:null,shop:[],shopBuyback:[],shopNextRestockAt:now()+RESTOCK_COOLDOWN_MS,pendingResults:null,codex:{enemies:{},sets:{}},discoveredRegions:[0],fundamentals:{streak:0,momentumBonus:0,eliteCharge:0,eliteReady:false,nextFeaturedAt:now()+FEATURED_STOCK_INTERVAL}};}
 function baseGame(name='Hero',klass='Knight'){const seed=now();return{version:VERSION,seed,meta:{created:now(),last:now(),changeLog:[...CHANGE_LOG]},player:basePlayer(name,klass),world:baseWorld()};}
 
 function computeDerived(player){
@@ -527,7 +595,25 @@ function randomSetForTier(tier){ const keys=Object.keys(SET_BONUSES); return Sta
 function makeItem(slot,tier,forceLegendary=false){ const rarity=rollRarity(forceLegendary); const stats=rollStats(tier,rarity.multiplier); const set=randomSetForTier(tier); const nameParts=[SLOT_LABEL[slot]||slot,`T${tier}`,rarity.key==='common'?'Standard':rarity.key.charAt(0).toUpperCase()+rarity.key.slice(1)]; if(set)nameParts.push(set); return{id:id(),type:'equipment',slot,tier,rarity:rarity.key,stats,value:Math.max(12,Math.round((18+tier*12)*rarity.multiplier)),set,name:nameParts.join(' '),locked:false}; }
 function makeConsumable(key,qty){ const def=CONSUMABLES[key]; if(!def)return null; return{id:id(),type:'consumable',name:def.name,rarity:def.rarity,stackKey:def.stackKey,maxStack:def.maxStack,value:def.value,tier:def.tier,qty:qty??1,consumableKey:key,locked:false}; }
 function lootConfig(tier){ let chosen=LOOT_TABLE[0]; for(const entry of LOOT_TABLE){ if(tier>=entry.tier)chosen=entry; } return chosen; }
-function stockShop(){ const region=REGIONS[State.data.world.regionIndex]; const tier=region.tier; const config=lootConfig(tier); const items=[]; const slots=State.rng.shuffle(config.slots).slice(0,4); for(const slot of slots){ items.push(makeItem(slot,clamp(tier+State.rng.int(-1,1),1,15))); } for(const key of (config.consumables||[])){ const stack=makeConsumable(key,State.rng.int(1,3)); if(stack)items.push(stack); } return items; }
+function stockShop(state=State.data){
+  const worldState=state?.world || State.data.world;
+  const region=REGIONS[worldState.regionIndex];
+  const tier=region.tier;
+  const config=lootConfig(tier);
+  const items=[];
+  const slots=State.rng.shuffle(config.slots).slice(0,4);
+  for(const slot of slots){ items.push(makeItem(slot,clamp(tier+State.rng.int(-1,1),1,15))); }
+  for(const key of (config.consumables||[])){ const stack=makeConsumable(key,State.rng.int(1,3)); if(stack)items.push(stack); }
+
+  ensureFundamentalState(state);
+  const fundamentals=worldState.fundamentals;
+  if(fundamentals && now()>=fundamentals.nextFeaturedAt){
+    const featured=makeConsumable('momentumDraught',State.rng.int(1,2));
+    if(featured){ featured.featured=true; items.unshift(featured); fundamentals.nextFeaturedAt=now()+FEATURED_STOCK_INTERVAL; }
+  }
+
+  return items;
+}
 function priceFor(item){return Math.round(item.value*SHOP_PRICING.buy);} function sellValue(item){return Math.max(1,Math.round(item.value*SHOP_PRICING.sell));}
 
 /* =========================================================================================
@@ -551,7 +637,14 @@ function playerHasSet(player,count){ const map={}; for(const item of Object.valu
 function xpFor(level){return Math.round(25+Math.pow(level,1.6)*16);}
 function applyXP(state,amount){
   if(!amount)return;
-  const p=state.player; p.xp+=amount; state._messages.push({text:`+${amount} XP`});
+  const p=state.player;
+  state._messages=state._messages||[];
+  const rested=p.meta?.restedXP;
+  let bonus=0;
+  if(rested && rested.pool>0){ const spend=Math.min(rested.pool,amount); bonus=Math.round(spend*RESTED_XP_BONUS_MULT); rested.pool=clamp(rested.pool-spend,0,RESTED_XP_MAX); }
+  const total=amount+bonus;
+  p.xp+=total;
+  state._messages.push({text:`+${total} XP${bonus?` (Rested +${bonus})`:''}`});
   let leveled=false;
   while(p.xp>=xpFor(p.level)){
     p.xp-=xpFor(p.level); p.level+=1; p.skillPoints+=1; p.baseHP+=12; p.baseMP+=8; leveled=true;
@@ -564,8 +657,17 @@ function applyXP(state,amount){
 function applyRewards(state,rewards){
   if(!rewards)return;
   const p=state.player;
-  if(rewards.gold){ p.gold+=rewards.gold; p.goldEarned+=rewards.gold; state._messages.push({text:`+${coins(rewards.gold)}`}); }
-  if(rewards.xp)applyXP(state,rewards.xp);
+  state._messages=state._messages||[];
+  const fundamentals=state.world?.fundamentals;
+  let goldReward=rewards.gold||0;
+  let xpReward=rewards.xp||0;
+  const momentum=clamp(fundamentals?.momentumBonus||0,0,0.5);
+  if(momentum>0){
+    if(xpReward){ const extraXP=Math.round(xpReward*momentum); if(extraXP>0){ xpReward+=extraXP; state._messages.push({text:`Momentum XP +${extraXP}`}); } }
+    if(goldReward){ const extraGold=Math.round(goldReward*momentum); if(extraGold>0){ goldReward+=extraGold; state._messages.push({text:`Momentum Gold +${coins(extraGold)}`}); } }
+  }
+  if(goldReward){ p.gold+=goldReward; p.goldEarned+=goldReward; state._messages.push({text:`+${coins(goldReward)}`}); }
+  if(xpReward)applyXP(state,xpReward);
   if(rewards.title&&!p.titles.includes(rewards.title)){ p.titles.push(rewards.title); state._messages.push({text:`New title: ${rewards.title}`}); }
   if(rewards.item){ const item=makeItem(rewards.item.slot||'weapon',rewards.item.tier||1,rewards.item.forceLegendary||false); addToInventory(state,item,1,true); state._messages.push({text:`Received ${item.name}`}); populateQuickSlots(state.player); }
   updateQuestsAndAchievements();
@@ -608,17 +710,19 @@ function updateQuestsAndAchievements(){
 /* =========================================================================================
    Battle Engine (fixed damage, statuses, turns)
 ========================================================================================= */
-function makeEnemy(level,key,boss=false){
+function makeEnemy(level,key,boss=false,elite=false){
   const template=ENEMY_ARCHETYPES[key]||ENEMY_ARCHETYPES.brigand;
-  const hpScale=boss?2.1:1; const atkScale=boss?1.4:1;
-  const hp=Math.round(template.hp*hpScale+level*8);
-  const atk=Math.round(template.atk*atkScale+level*1.6);
+  const eliteScale=elite?1.25:1;
+  const hpScale=(boss?2.1:1)*eliteScale;
+  const atkScale=(boss?1.4:1)*eliteScale;
+  const hp=Math.round(template.hp*hpScale+level*8*eliteScale);
+  const atk=Math.round(template.atk*atkScale+level*1.6*eliteScale);
   return{
-    id:id(), archetype:key, name:boss?`${template.name} Prime`:template.name, level,
+    id:id(), archetype:key, name:boss?`${template.name} Prime`:elite?`${template.name} Elite`:template.name, level,
     hp, hpMax:hp, atk, resists:{...(template.resists||{})},
-    reward:{xp:template.reward.xp,gold:template.reward.gold},
+    reward:{xp:Math.round(template.reward.xp*(boss?1.7:1)*(elite?1.35:1)),gold:Math.round(template.reward.gold*(boss?1.5:1)*(elite?1.35:1))},
     statuses:{burn:0,bleed:0,stun:0,weaken:0,vuln:0},
-    boss, tags:template.tags||[], alive:true, sprite: SpriteForge.makeEnemySprite(key,boss)
+    boss, elite, tags:template.tags||[], alive:true, sprite: SpriteForge.makeEnemySprite(key,boss)
   };
 }
 
@@ -702,7 +806,11 @@ function applyTurnStatusesLogic(state,battle,phase){
     if(p.statuses.haste>0) p.statuses.haste-=1;
 
     p.abilities.forEach(a=>{ if(a.cooldown>0) a.cooldown=Math.max(0,a.cooldown-1); });
-    if(battle.quickCooldown>0) battle.quickCooldown=Math.max(0,battle.quickCooldown-1);
+  if(battle.quickCooldown>0){
+    let reduction=1;
+    if(p._mods?.quickCharge>0){ reduction+=1; p._mods.quickCharge=Math.max(0,p._mods.quickCharge-1); }
+    battle.quickCooldown=Math.max(0,battle.quickCooldown-reduction);
+  }
   }
 
   battle.statusTick[phase]=true;
@@ -716,12 +824,28 @@ function endBattle(victory){
   State.patch(state=>{
     const battle=state.world.battle; if(!battle) return;
     const log=battle.log;
+    state._messages=state._messages||[];
+    ensureFundamentalState(state);
+    const fundamentals=state.world.fundamentals;
     if(victory){
       let totalXP=0,totalGold=0,kills=0,bosses=0;
       for(const e of battle.enemies){
         if(e.alive) continue;
         totalXP+=e.reward.xp; totalGold+=e.reward.gold; kills++;
         if(e.boss) bosses++;
+      }
+      if(battle.eliteBattle){
+        totalXP=Math.round(totalXP*1.2);
+        totalGold=Math.round(totalGold*1.2);
+        state._messages.push({text:'Elite spoils boosted.'});
+      }
+      fundamentals.streak=(fundamentals.streak||0)+1;
+      fundamentals.eliteCharge=(fundamentals.eliteCharge||0)+1;
+      fundamentals.momentumBonus=clamp(0.05+(fundamentals.streak-1)*0.04,0,0.35);
+      if(fundamentals.eliteCharge>=MOMENTUM_STREAK_STEP){
+        fundamentals.eliteCharge=0;
+        fundamentals.eliteReady=true;
+        state._messages.push({text:'Elite encounter primed by momentum!'});
       }
       state.player.kills+=kills;
       if(bosses>0) state.player.meta.bossKills=(state.player.meta.bossKills||0)+bosses;
@@ -749,6 +873,7 @@ function endBattle(victory){
       state.player.hp=Math.max(1,Math.round(state.player.derived.hpMax*0.35));
       state.player.mp=Math.max(0,Math.round(state.player.derived.mpMax*0.4));
       AudioFX.defeat(); ArenaFx.flash('#ff8b8b');
+      fundamentals.streak=0; fundamentals.momentumBonus=0; fundamentals.eliteCharge=0; fundamentals.eliteReady=false;
     }
     state.world.pendingResults={victory,log:battle.log.slice(0,5)};
     state.world.battle=null;
@@ -828,15 +953,20 @@ function doPlayerAction(index){
     else{
       const tgt=nextAliveEnemy(battle); if(!tgt){ endBattle(true); return; }
       const {damage,isCrit}=computeDamage(ability,p.derived,tgt);
-      const hits= ability.tags?.includes('multi') ? [Math.round(damage*0.6),Math.round(damage*0.6),Math.round(damage*0.6)] : [damage];
+      let hits= ability.tags?.includes('multi') ? [Math.round(damage*0.6),Math.round(damage*0.6),Math.round(damage*0.6)] : [damage];
+      if(ability.key==='rainOfArrows' && tgt.statuses.bleed>0){ hits=hits.map(h=>Math.round(h*1.25)); }
+      if(ability.key==='astralNova' && battle.eliteBattle){ hits=hits.map(h=>Math.round(h*1.15)); }
       const total=hits.reduce((a,c)=>a+c,0);
       tgt.hp-=total;
       if(ability.apply?.burn)   tgt.statuses.burn=Math.max(tgt.statuses.burn,ability.apply.burn);
       if(ability.apply?.bleed)  tgt.statuses.bleed=Math.max(tgt.statuses.bleed,ability.apply.bleed);
       if(ability.apply?.stun)   tgt.statuses.stun=Math.max(tgt.statuses.stun,ability.apply.stun);
       if(ability.tags?.includes('vuln')) tgt.statuses.vuln=Math.max(tgt.statuses.vuln,1);
+      if(ability.key==='rupture'){ tgt.statuses.weaken=Math.max(tgt.statuses.weaken,1); }
       ability.cooldown=ability.cd||0;
       ArenaFx.hit(tgt,isCrit?1.2:1.0); ArenaFx.floating(tgt,`-${total}`,(isCrit?'#ffd36a':'#ffb47b')); if(isCrit) ArenaFx.flash('#ffd36a');
+      if(ability.key==='rainOfArrows' && tgt.statuses.bleed>0) log.unshift('Bleeding foes take amplified arrow damage.');
+      if(ability.key==='astralNova' && battle.eliteBattle) log.unshift('Astral Nova destabilises the elite formation.');
       log.unshift(`You cast ${ability.name} for ${total}${isCrit?' (CRIT!)':''}.`);
       if(tgt.hp<=0 && tgt.alive){ tgt.alive=false; log.unshift(`${tgt.name} is defeated.`); AudioFX.kill(); }
     }
@@ -880,18 +1010,22 @@ function useQuickSlot(i){
 ========================================================================================= */
 function startBattle(tierOverride=null,boss=false){
   State.patch(state=>{
+    ensureFundamentalState(state);
     const region=REGIONS[state.world.regionIndex];
     const tier=tierOverride ?? region.tier;
+    const fundamentals=state.world.fundamentals||{};
+    let eliteActive=!boss && fundamentals.eliteReady;
+    if(eliteActive) fundamentals.eliteReady=false;
     const partySize=boss?1: (State.rng()<0.35?3:2);
     const enemies=[];
     for(let i=0;i<partySize;i++){
       const key = boss ? region.boss : State.rng.pick(region.enemies);
-      enemies.push(makeEnemy(state.player.level+Math.max(0,tier-1),key, boss && i===0));
+      enemies.push(makeEnemy(state.player.level+Math.max(0,tier-1),key, boss && i===0, eliteActive && i===0));
     }
     state.world.battle={
       id:id(), round:1, turn:'player', enemies,
-      log:[`Battle start! ${enemies.map(e=>e.name).join(', ')} appear.`],
-      statusTick:{player:false,enemies:false}, quickCooldown:0
+      log:[`Battle start! ${enemies.map(e=>e.name).join(', ')} appear.${eliteActive?' Elite presence detected!':''}`],
+      statusTick:{player:false,enemies:false}, quickCooldown:0, eliteBattle:eliteActive
     };
     ArenaFx.reset(); AudioFX.click();
   });
@@ -941,6 +1075,10 @@ function renderTitle(){
 
 function renderHub(){
   const p=State.data.player;
+  const fundamentals=State.data.world.fundamentals||{};
+  const rested=p.meta?.restedXP||{pool:0,lastTick:now()};
+  const restedPool=Math.round(rested.pool||0);
+  const momentumBonus=Math.round((fundamentals.momentumBonus||0)*100);
   return html`
   <div class="grid cols-2">
     <div class="panel">
@@ -962,6 +1100,11 @@ function renderHub(){
           <div class="stat"><span>INT</span><span>${p.derived.int}</span></div>
           <div class="stat"><span>SP</span><span>${p.derived.sp}</span></div>
         </div>
+        <div class="grid cols-2 muted" style="margin:6px 0">
+          <div class="stat"><span>Rested XP</span><span>${restedPool}/${RESTED_XP_MAX}</span></div>
+          <div class="stat"><span>Momentum</span><span>${momentumBonus>0?`+${momentumBonus}%`:'None'}</span></div>
+        </div>
+        <div class="muted" style="font-size:12px">Streak ${fundamentals.streak||0} • Elite Ready: ${fundamentals.eliteReady?'Yes':'No'}</div>
         <div class="badges"><span class="badge">Gold ${coins(p.gold)}</span><span class="badge">Crit ${(p.derived.crit*100|0)}%</span></div>
       </div>
       <div class="foot">
@@ -1032,10 +1175,10 @@ function renderMap(){
 
 function renderShop(){
   const world=State.data.world;
-  if(world.shop.length===0) State.patch(s=>{ s.world.shop=stockShop(); s.world.shopNextRestockAt=now()+RESTOCK_COOLDOWN_MS; });
+  if(world.shop.length===0) State.patch(s=>{ s.world.shop=stockShop(s); s.world.shopNextRestockAt=now()+RESTOCK_COOLDOWN_MS; });
   const stock=world.shop.map(it=>html`
-    <div class="enemy-card">
-      <div><strong>${it.name||'Item'}</strong> ${it.type==='consumable'?html`<span class="badge">x${it.qty}</span>`:''}</div>
+    <div class="enemy-card" data-featured="${it.featured? 'true':'false'}">
+      <div><strong>${it.name||'Item'}</strong> ${it.featured?html`<span class="badge primary">Featured</span>`:''} ${it.type==='consumable'?html`<span class="badge">x${it.qty}</span>`:''}</div>
       <div class="muted" style="font-size:12px">${it.type==='consumable'?'Consumable':`T${it.tier} • ${SLOT_LABEL[it.slot]}`}</div>
       <div class="badges"><span class="badge">${coins(priceFor(it))}</span><button class="btn small primary" data-buy="${it.id}">Buy</button></div>
     </div>`).join('');
@@ -1122,7 +1265,7 @@ function renderBattle(){
     </button>`).join('');
   const enemies=b.enemies.map(e=>html`
     <div class="enemy-card" data-enemy="${e.id}">
-      <div><strong>${e.name}</strong> ${e.boss?'<span class="badge warn">Boss</span>':''}</div>
+      <div><strong>${e.name}</strong> ${e.boss?'<span class="badge warn">Boss</span>':''} ${e.elite&&!e.boss?'<span class="badge">Elite</span>':''}</div>
       <div class="progress"><span style="width:${pct(e.hp/e.hpMax)}"></span></div>
       <div class="muted" style="font-size:12px">HP ${Math.max(0,e.hp)}/${e.hpMax}</div>
     </div>`).join('');
@@ -1502,7 +1645,7 @@ function startRestockTimer(){
     if(!State.data) return;
     const world=State.data.world;
     if(now()>=world.shopNextRestockAt){
-      State.patch(s=>{ s.world.shop=stockShop(); s.world.shopNextRestockAt=now()+RESTOCK_COOLDOWN_MS; });
+      State.patch(s=>{ s.world.shop=stockShop(s); s.world.shopNextRestockAt=now()+RESTOCK_COOLDOWN_MS; });
       toast('Shop restocked.');
       scheduleRender();
     }else if(CURRENT_ROUTE==='shop'){ scheduleRender(); }
