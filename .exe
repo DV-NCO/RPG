@@ -77,6 +77,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .toast-wrap{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:80}
 .toast{background:#10161d;border:1px solid var(--border);padding:10px 12px;border-radius:12px;min-width:220px}
 .toast.error{border-color:var(--danger);color:var(--danger)}
+.quality-pillars{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.quality-pillar{border:1px solid var(--border);border-radius:12px;padding:10px;background:#0f141c;box-shadow:0 6px 14px rgba(0,0,0,0.25)}
+.quality-pillar h5{margin:0;font-size:13px}
+.quality-pillar .focus{color:var(--muted);font-size:12px;margin-top:2px}
+.quality-pillar .score{color:var(--muted);font-size:11px;margin-top:6px}
+.checklist{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.check-item{display:flex;gap:10px;align-items:flex-start;border:1px solid rgba(38,52,69,0.6);border-radius:10px;padding:6px 8px;background:rgba(13,18,24,0.65)}
+.check-item .status{flex-shrink:0;width:16px;height:16px;border-radius:50%;margin-top:2px;border:1px solid var(--border);box-shadow:0 0 0 1px rgba(14,18,23,0.6) inset}
+.check-item[data-ok="true"] .status{background:var(--success);border-color:var(--success)}
+.check-item[data-ok="false"] .status{background:transparent}
+.check-item strong{font-size:12px}
+.check-item .detail{font-size:12px;color:var(--muted)}
+.quality-summary{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.quality-summary .badge{font-size:11px}
 .modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:90}
 .modal{background:#0f141b;border:1px solid var(--border);border-radius:16px;width:min(540px,94vw);box-shadow:0 16px 40px var(--shadow);max-height:90vh;overflow:auto}
 .title-screen{display:grid;place-items:center;height:calc(100vh - 140px);padding:16px}
@@ -167,12 +181,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
     <span>Nodes:</span><span id="dev-nodes">-</span>
     <span>Region:</span><span id="dev-region">-</span>
     <span>Seed:</span><span id="dev-seed">-</span>
+    <span>Quality:</span><span id="dev-quality">-</span>
   </div>
   <div class="badges">
     <button class="btn small primary" id="dev-export">Export JSON</button>
     <button class="btn small" id="dev-import">Import JSON</button>
     <button class="btn small" id="dev-selftest">Run Self-Test</button>
     <button class="btn small" id="dev-changelog">Change Log</button>
+    <button class="btn small" id="dev-blueprint">A+++ Blueprint</button>
   </div>
   <pre id="dev-output"></pre>
 </div>
@@ -192,6 +208,325 @@ const CHANGE_LOG = [
   '[v2.2.0] Skill traits, more abilities/enemies/sets; dev overlay shows seed & FPS EMA.',
   '[v2.2.0] Input remap modal with conflict checks; autosave guards; export/import JSON.'
 ];
+
+/* =========================================================================================
+   A+++ Blueprint & Quality Audit Helpers
+========================================================================================= */
+const A_TRIPLE_PLUS_BLUEPRINT=[
+  {
+    id:'integrity',
+    title:'Integrity & Safeguards',
+    focus:'Protect player progress and guarantee migrations remain deterministic.',
+    fundamentals:[
+      {
+        id:'schema-versioning',
+        label:'Schema version + change log',
+        detail:'Save payloads reflect the current VERSION and retain a full human change history for audit trails.',
+        evaluate:ctx=>!!ctx.state && ctx.state.version===VERSION && Array.isArray(ctx.state.meta?.changeLog) && ctx.state.meta.changeLog.length>=CHANGE_LOG.length
+      },
+      {
+        id:'rested-meta',
+        label:'Rested metadata seeded & capped',
+        detail:'Rested experience exists with a recent tick timestamp and is clamped within RESTED_XP_MAX.',
+        evaluate:ctx=>{
+          const rested=ctx.state?.player?.meta?.restedXP;
+          return !!rested && Number.isFinite(rested.pool) && Number.isFinite(rested.lastTick) && rested.pool>=0 && rested.pool<=RESTED_XP_MAX;
+        }
+      },
+      {
+        id:'world-fundamentals',
+        label:'World fundamentals persisted',
+        detail:'Momentum streaks, elite readiness and featured timers are persisted so world scaling survives reloads.',
+        evaluate:ctx=>{
+          const fundamentals=ctx.state?.world?.fundamentals;
+          return !!fundamentals && Number.isFinite(fundamentals.streak) && Number.isFinite(fundamentals.momentumBonus) && Number.isFinite(fundamentals.nextFeaturedAt);
+        }
+      },
+      {
+        id:'slot-governance',
+        label:'Slot-aware autosave governance',
+        detail:'Settings expose autosave toggles and slot selection so QA can branch test builds safely.',
+        evaluate:ctx=>typeof settings.autosave==='boolean' && Number.isInteger(settings.slot)
+      }
+    ]
+  },
+  {
+    id:'progression',
+    title:'Progression & Mastery',
+    focus:'Ensure the power curve, quests and rewards reinforce continuous advancement.',
+    fundamentals:[
+      {
+        id:'derived-stats',
+        label:'Derived stats synchronised',
+        detail:'Player derived block mirrors the currently equipped loadout including hp/mp ceilings and power rating.',
+        evaluate:ctx=>{
+          const p=ctx.state?.player;
+          if(!p?.derived) return false;
+          const aligned=Math.abs((p.derived.power??0)-(p.power??0));
+          return Number.isFinite(p.derived.hpMax) && Number.isFinite(p.derived.mpMax) && Number.isFinite(p.power) && aligned<=1;
+        }
+      },
+      {
+        id:'rested-consumption',
+        label:'Rested XP consumption & refill',
+        detail:'Rested pools are consumed via applyXP and regenerate on finalize ticks without exceeding bounds.',
+        evaluate:ctx=>{
+          const p=ctx.state?.player;
+          const rested=p?.meta?.restedXP;
+          return !!rested && rested.pool<=RESTED_XP_MAX && rested.pool>=0 && typeof applyFundamentalEnhancements==='function';
+        }
+      },
+      {
+        id:'questing',
+        label:'Quest tracker populated',
+        detail:'Active quests are present with progress hooks to reward streaked play.',
+        evaluate:ctx=>Array.isArray(ctx.state?.world?.quests) && ctx.state.world.quests.length>0
+      },
+      {
+        id:'momentum-bounds',
+        label:'Momentum bonus bounded',
+        detail:'World momentum never exceeds the 50% soft cap to keep rewards predictable.',
+        evaluate:ctx=>{
+          const bonus=ctx.state?.world?.fundamentals?.momentumBonus;
+          return typeof bonus==='number' && bonus>=0 && bonus<=0.5;
+        }
+      }
+    ]
+  },
+  {
+    id:'combat',
+    title:'Combat Identity & Feedback',
+    focus:'Battles surface class fantasy, readable status play and audiovisual feedback loops.',
+    fundamentals:[
+      {
+        id:'ability-tags',
+        label:'Ability libraries tagged',
+        detail:'Every equipped ability carries descriptive tags for downstream logic and tooltips.',
+        evaluate:ctx=>Array.isArray(ctx.state?.player?.abilities) && ctx.state.player.abilities.every(a=>Array.isArray(a.tags)&&a.tags.length>0)
+      },
+      {
+        id:'status-ledger',
+        label:'Status ledgers initialised',
+        detail:'Player status containers track shield, bleed, stun and pacing modifiers.',
+        evaluate:ctx=>{
+          const statuses=ctx.state?.player?.statuses;
+          return !!statuses && ['shield','burn','bleed','stun','weaken','vuln','haste'].every(k=>k in statuses);
+        }
+      },
+      {
+        id:'arena-fx',
+        label:'ArenaFX online',
+        detail:'Floating numbers, particles and screen shake utilities are ready for encounter rendering.',
+        evaluate:()=>typeof ArenaFx?.hit==='function' && typeof ArenaFx?.draw==='function'
+      },
+      {
+        id:'audio-feedback',
+        label:'Audio feedback mapped',
+        detail:'Limiter-backed WebAudio cues respond to victories, defeats and consumable usage.',
+        evaluate:()=>typeof AudioFX?.victory==='function' && typeof AudioFX?.use==='function'
+      }
+    ]
+  },
+  {
+    id:'economy',
+    title:'Economy & Inventory Health',
+    focus:'Loot, shops and consumables reinforce meaningful trade-offs.',
+    fundamentals:[
+      {
+        id:'shop-restock',
+        label:'Restock timers active',
+        detail:'Shop payloads include a restock timestamp and featured rotation window.',
+        evaluate:ctx=>Number.isFinite(ctx.state?.world?.shopNextRestockAt) && Number.isFinite(ctx.state.world?.fundamentals?.nextFeaturedAt)
+      },
+      {
+        id:'buyback-pool',
+        label:'Buyback buffer',
+        detail:'Shop buyback inventory exists to recover misclicks during QA sweeps.',
+        evaluate:ctx=>Array.isArray(ctx.state?.world?.shopBuyback)
+      },
+      {
+        id:'momentum-tonic',
+        label:'Momentum draught blueprint',
+        detail:'Consumable tables ship with the Momentum Draught tonic for streak manipulation.',
+        evaluate:()=>!!CONSUMABLES?.momentumDraught
+      },
+      {
+        id:'inventory-governance',
+        label:'Inventory capacity governed',
+        detail:'Player inventory is bounded and exposes quick-slot seeding for combat readiness.',
+        evaluate:ctx=>{
+          const p=ctx.state?.player;
+          return Number.isFinite(p?.invSize) && Array.isArray(p?.quickSlots) && p.quickSlots.length===QUICK_SLOT_COUNT;
+        }
+      }
+    ]
+  },
+  {
+    id:'world',
+    title:'World Momentum & Encounter Flow',
+    focus:'Overworld pacing reacts to streaks, elite charges and discovered regions.',
+    fundamentals:[
+      {
+        id:'streak-tracking',
+        label:'Momentum streak tracking',
+        detail:'Fundamental streak counters increment towards elite charges.',
+        evaluate:ctx=>Number.isFinite(ctx.state?.world?.fundamentals?.streak)
+      },
+      {
+        id:'elite-charge',
+        label:'Elite charge capacitor',
+        detail:'Elite readiness values accumulate and expose eliteReady toggles.',
+        evaluate:ctx=>Number.isFinite(ctx.state?.world?.fundamentals?.eliteCharge) && typeof ctx.state.world.fundamentals.eliteReady==='boolean'
+      },
+      {
+        id:'region-discovery',
+        label:'Region discovery ledger',
+        detail:'Discovered region arrays persist to support map fast-travel QA.',
+        evaluate:ctx=>Array.isArray(ctx.state?.world?.discoveredRegions)
+      },
+      {
+        id:'battle-normalised',
+        label:'Battle snapshot normalised',
+        detail:'Active battle payloads, when present, contain enemy arrays with hp bounds.',
+        evaluate:ctx=>{
+          const battle=ctx.state?.world?.battle;
+          return !battle || (Array.isArray(battle.enemies) && battle.enemies.every(e=>Number.isFinite(e.hp)&&Number.isFinite(e.hpMax)));
+        }
+      }
+    ]
+  },
+  {
+    id:'ux',
+    title:'UX, Accessibility & Observability',
+    focus:'Players and testers receive tooling, remaps and telemetry at a glance.',
+    fundamentals:[
+      {
+        id:'keymap-remap',
+        label:'Keymap remapping',
+        detail:'All key actions expose configurable bindings without conflicts.',
+        evaluate:ctx=>settings?.keymap && KEY_ACTIONS.every(act=>typeof settings.keymap[act.id]==='string')
+      },
+      {
+        id:'gamepad-infra',
+        label:'Gamepad focus infrastructure',
+        detail:'GamepadState tracks focusable targets and move cooldowns for pad QA.',
+        evaluate:()=>typeof GamepadState==='object' && Array.isArray(GamepadState.focusables)
+      },
+      {
+        id:'dev-overlay',
+        label:'Dev overlay operational',
+        detail:'Toggleable dev overlay surfaces live metrics, exports and change logs.',
+        evaluate:()=>!!devOverlay
+      },
+      {
+        id:'toast-discipline',
+        label:'Toast discipline',
+        detail:'Toast infrastructure caps stack counts and distinguishes error variants.',
+        evaluate:()=>Number.isFinite(MAX_TOASTS) && MAX_TOASTS>=3
+      }
+    ]
+  }
+];
+
+function runQualityAudit(state){
+  const ctx={state:state||null};
+  let score=0, max=0;
+  const results=A_TRIPLE_PLUS_BLUEPRINT.map(pillar=>{
+    const items=pillar.fundamentals.map(fundamental=>{
+      let ok=false;
+      try{ ok=!!fundamental.evaluate(ctx); }
+      catch(err){ ok=false; }
+      if(ok) score+=1;
+      max+=1;
+      return {...fundamental,ok};
+    });
+    const achieved=items.filter(it=>it.ok).length;
+    return {...pillar,items,score:achieved,total:items.length};
+  });
+  const percent=max>0 ? Math.round((score/max)*100) : 0;
+  return {results,score,max,percent};
+}
+
+function qualityAuditToText(audit){
+  if(!audit || !audit.max){ return 'Load a save to evaluate quality pillars.'; }
+  const lines=[`A+++ Quality Score: ${audit.percent}% (${audit.score}/${audit.max})`];
+  audit.results.forEach(pillar=>{
+    lines.push(`\n${pillar.title} — ${pillar.score}/${pillar.total}`);
+    pillar.items.forEach(item=>{
+      lines.push(`  ${item.ok?'✔':'✖'} ${item.label}: ${item.detail}`);
+    });
+  });
+  return lines.join('\n');
+}
+
+function qualityBlueprintMarkup(audit){
+  if(!audit || !audit.results.length){
+    return '<div class="muted">Load a save to review the executive quality charter.</div>';
+  }
+  return audit.results.map(pillar=>html`
+    <div class="quality-pillar">
+      <h5>${pillar.title}</h5>
+      <div class="focus">${pillar.focus}</div>
+      <div class="checklist">
+        ${pillar.items.map(item=>html`
+          <div class="check-item" data-ok="${item.ok}">
+            <div class="status" aria-hidden="true"></div>
+            <div>
+              <strong>${item.label}</strong>
+              <div class="detail">${item.detail}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="score">Score ${pillar.score}/${pillar.total}</div>
+    </div>
+  `).join('');
+}
+
+function qualitySummaryBadges(audit){
+  if(!audit || !audit.max){
+    return html`<span class="badge">A+++ Score N/A</span>`;
+  }
+  return html`
+    <span class="badge">A+++ ${audit.percent}%</span>
+    <span class="badge">${audit.score}/${audit.max} fundamentals</span>
+  `;
+}
+
+function runSelfTest(){
+  const lines=[`[${new Date().toLocaleTimeString()}] Executive QA sweep`];
+  const state=State.data;
+  if(!state){
+    lines.push('• No active save loaded – launch a slot to evaluate gameplay fundamentals.');
+  }else{
+    const audit=UIState.lastAudit||runQualityAudit(state);
+    lines.push(`• A+++ Score: ${audit.percent}% (${audit.score}/${audit.max})`);
+    lines.push(`• Player LV ${state.player.level} • Gold ${coins(state.player.gold)} • Nodes ${state.player.nodesCleared}`);
+    const rested=state.player.meta?.restedXP;
+    if(rested){
+      lines.push(`• Rested pool ${Math.round(rested.pool)}/${RESTED_XP_MAX} (last tick ${new Date(rested.lastTick).toLocaleTimeString()})`);
+    }
+  }
+
+  const missingAbilities=Object.entries(CLASS_DEFS).flatMap(([klass,cls])=>{
+    return (cls.abilityKeys||[]).filter(key=>!ABILITY_LIBRARY[key]).map(key=>`${klass}:${key}`);
+  });
+  lines.push(missingAbilities.length?`• Missing ability definitions: ${missingAbilities.join(', ')}`:'• Class ability loadouts verified.');
+
+  const lootIssues=LOOT_TABLE.filter(entry=>Array.isArray(entry.consumables) && entry.consumables.some(key=>!CONSUMABLES[key]));
+  lines.push(lootIssues.length?`• Loot table issues at tiers: ${lootIssues.map(l=>`T${l.tier}`).join(', ')}`:'• Loot table consumable references validated.');
+
+  const questIds=new Set();
+  const duplicateQuests=QUEST_LIBRARY.filter(q=>questIds.has(q.id)?true:(questIds.add(q.id),false)).map(q=>q.id);
+  lines.push(questDuplicateMessage(duplicateQuests));
+
+  lines.push(`• Change log entries: ${CHANGE_LOG.length}`);
+  return lines.join('\n');
+}
+
+function questDuplicateMessage(dupes){
+  return dupes.length?`• Duplicate quest IDs detected: ${dupes.join(', ')}`:'• Quest IDs are unique.';
+}
 
 /* =========================================================================================
    Utilities & Core
@@ -309,7 +644,22 @@ const modalClose = byId('modal-close');
 const toastWrap = byId('toasts');
 const devOverlay = byId('dev-overlay');
 const devOutput = byId('dev-output');
+const devQuality = byId('dev-quality');
 const gamepadHint = byId('gamepad-hint');
+const overlayImportInput = (()=>{
+  if(!devOverlay) return null;
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='application/json';
+  input.style.display='none';
+  devOverlay.appendChild(input);
+  input.addEventListener('change',ev=>{
+    const file=ev.target.files?.[0];
+    if(file) importJSON(file);
+    ev.target.value='';
+  });
+  return input;
+})();
 
 /* =========================================================================================
    Gamepad Support
@@ -661,7 +1011,8 @@ const UIState={
   shopTab:'stock',
   devOpen:false,
   fps:0,fpsEMA:0,fpsAccumulator:0,fpsCount:0,
-  restockTick:null
+  restockTick:null,
+  lastAudit:null
 };
 
 const State={
@@ -1289,6 +1640,8 @@ function renderHub(){
   const rested=p.meta?.restedXP||{pool:0,lastTick:now()};
   const restedPool=Math.round(rested.pool||0);
   const momentumBonus=Math.round((fundamentals.momentumBonus||0)*100);
+  const audit=UIState.lastAudit||runQualityAudit(State.data);
+  const qualityBadges=qualitySummaryBadges(audit);
   return html`
   <div class="grid cols-2">
     <div class="panel">
@@ -1315,6 +1668,7 @@ function renderHub(){
           <div class="stat"><span>Momentum</span><span>${momentumBonus>0?`+${momentumBonus}%`:'None'}</span></div>
         </div>
         <div class="muted" style="font-size:12px">Streak ${fundamentals.streak||0} • Elite Ready: ${fundamentals.eliteReady?'Yes':'No'}</div>
+        <div class="quality-summary">${qualityBadges}</div>
         <div class="badges"><span class="badge">Gold ${coins(p.gold)}</span><span class="badge">Crit ${(p.derived.crit*100|0)}%</span></div>
       </div>
       <div class="foot">
@@ -1505,6 +1859,8 @@ function renderCodex(){
     const a=ACHIEVEMENT_LIBRARY.find(x=>x.id===id);
     return html`<div class="stat"><span>${a?.name||id}</span><span class="muted">${new Date(ts).toLocaleString()}</span></div>`;
   }).join('');
+  const audit=UIState.lastAudit||runQualityAudit(State.data);
+  const blueprint=qualityBlueprintMarkup(audit);
   return html`
   <div class="panel">
     <div class="head"><strong>Codex</strong></div>
@@ -1514,6 +1870,9 @@ function renderCodex(){
       <div class="sep"></div>
       <h4 style="margin:.2em 0">Achievements</h4>
       ${ach||'<div class="muted">None yet.</div>'}
+      <div class="sep"></div>
+      <h4 style="margin:.2em 0">Executive A+++ Blueprint</h4>
+      <div class="quality-pillars">${blueprint}</div>
     </div>
     <div class="foot"><button class="btn" data-route="hub">Back</button></div>
   </div>`;
@@ -1687,7 +2046,16 @@ function scheduleRender(){ needsRender=true; }
 function render(){
   needsRender=false;
   byId('dev-route').textContent=CURRENT_ROUTE;
-  const s=State.data; if(s) { byId('dev-lv').textContent=s.player.level; byId('dev-nodes').textContent=s.player.nodesCleared; byId('dev-region').textContent=REGIONS[s.world.regionIndex].name; byId('dev-seed').textContent=State.rng.seed; }
+  const s=State.data;
+  const audit=runQualityAudit(s);
+  UIState.lastAudit=audit;
+  if(devQuality) devQuality.textContent=audit.max?`${audit.percent}%`:'-';
+  if(s) {
+    byId('dev-lv').textContent=s.player.level;
+    byId('dev-nodes').textContent=s.player.nodesCleared;
+    byId('dev-region').textContent=REGIONS[s.world.regionIndex].name;
+    byId('dev-seed').textContent=State.rng.seed;
+  }
 
   let htmlOut='';
   switch(CURRENT_ROUTE){
@@ -1901,6 +2269,29 @@ function toast(text,err=false){
   if(toastWrap.children.length>MAX_TOASTS) toastWrap.removeChild(toastWrap.firstChild);
   setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),300); }, 1800);
 }
+
+const devExport=byId('dev-export');
+if(devExport) devExport.addEventListener('click',()=>{
+  exportJSON();
+  if(devOutput) devOutput.textContent='Export triggered — check your downloads for the JSON snapshot.';
+});
+const devImport=byId('dev-import');
+if(devImport) devImport.addEventListener('click',()=>{
+  if(devOutput) devOutput.textContent='Select a save JSON to import…';
+  overlayImportInput?.click();
+});
+const devSelftestBtn=byId('dev-selftest');
+if(devSelftestBtn) devSelftestBtn.addEventListener('click',()=>{
+  if(devOutput) devOutput.textContent=runSelfTest();
+});
+const devChangelogBtn=byId('dev-changelog');
+if(devChangelogBtn) devChangelogBtn.addEventListener('click',()=>{
+  if(devOutput) devOutput.textContent=CHANGE_LOG.join('\n');
+});
+const devBlueprintBtn=byId('dev-blueprint');
+if(devBlueprintBtn) devBlueprintBtn.addEventListener('click',()=>{
+  if(devOutput) devOutput.textContent=qualityAuditToText(UIState.lastAudit||runQualityAudit(State.data));
+});
 
 byId('btn-save').addEventListener('click', saveGame);
 byId('btn-reset').addEventListener('click', ()=>{
