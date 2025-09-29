@@ -103,6 +103,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .dev-overlay pre{max-height:160px;overflow:auto;background:#0b1018;border:1px solid var(--border);padding:6px;border-radius:8px}
 .dev-overlay .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 .overlay-hint{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#10161d;border:1px solid var(--border);padding:10px 14px;border-radius:14px;box-shadow:0 8px 18px rgba(0,0,0,0.4);display:none;z-index:120}
+.overlay-hint.show{display:block}
+[data-gamepad-focus].gamepad-focus{outline:2px solid var(--accent);box-shadow:0 0 0 2px rgba(106,169,255,0.35);position:relative;z-index:5}
+[data-gamepad-focus].gamepad-focus::after{content:"";position:absolute;inset:-6px;border-radius:inherit;border:1px solid rgba(106,169,255,0.45);pointer-events:none}
 .rarity-common{color:#aeb7c4}
 .rarity-rare{color:#7db4ff}
 .rarity-epic{color:#b890ff}
@@ -122,16 +125,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       <span class="badge small">v2.2.0</span>
     </div>
     <nav aria-label="Primary navigation">
-      <button class="btn ghost" data-route="title" title="Title Screen (T)">Title</button>
-      <button class="btn ghost" data-route="hub" title="Hub (H)">Hub</button>
-      <button class="btn ghost" data-route="map" title="Map (M)">Map</button>
-      <button class="btn ghost" data-route="shop" title="Shop (S)">Shop</button>
-      <button class="btn ghost" data-route="battle" title="Battle (B)">Battle</button>
-      <button class="btn ghost" data-route="skills" title="Skill Tree (K)">Skills</button>
-      <button class="btn ghost" data-route="settings">Settings</button>
-      <button class="btn ghost" data-route="codex" title="Codex (C)">Codex</button>
-      <button class="btn ghost" id="btn-save" title="Save">Save</button>
-      <button class="btn ghost danger" id="btn-reset" title="Reset">Reset</button>
+      <button class="btn ghost" data-route="title" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Title Screen (T)">Title</button>
+      <button class="btn ghost" data-route="hub" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Hub (H)">Hub</button>
+      <button class="btn ghost" data-route="map" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Map (M)">Map</button>
+      <button class="btn ghost" data-route="shop" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Shop (S)">Shop</button>
+      <button class="btn ghost" data-route="battle" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Battle (B)">Battle</button>
+      <button class="btn ghost" data-route="skills" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Skill Tree (K)">Skills</button>
+      <button class="btn ghost" data-route="settings" data-gamepad-focus="route" aria-describedby="gamepad-hint">Settings</button>
+      <button class="btn ghost" data-route="codex" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Codex (C)">Codex</button>
+      <button class="btn ghost" id="btn-save" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Save">Save</button>
+      <button class="btn ghost danger" id="btn-reset" data-gamepad-focus="route" aria-describedby="gamepad-hint" title="Reset">Reset</button>
     </nav>
   </header>
   <main id="view" role="main"></main>
@@ -173,7 +176,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   </div>
   <pre id="dev-output"></pre>
 </div>
-<div class="overlay-hint" id="gamepad-hint">Gamepad detected. Use D-Pad/Stick to move, A to activate, B to go back.</div>
+<div class="overlay-hint" id="gamepad-hint" role="status" aria-live="polite">Gamepad detected. Use D-Pad/Stick to move, A to activate, B to go back, X/Y/RB for quick slots, LB to attempt escape.</div>
 
 <script>
 'use strict';
@@ -306,6 +309,213 @@ const modalClose = byId('modal-close');
 const toastWrap = byId('toasts');
 const devOverlay = byId('dev-overlay');
 const devOutput = byId('dev-output');
+const gamepadHint = byId('gamepad-hint');
+
+/* =========================================================================================
+   Gamepad Support
+========================================================================================= */
+const GamepadState={
+  connected:false,
+  index:null,
+  focusables:[],
+  focusIndex:0,
+  lastMove:0,
+  lastButtons:[],
+  scanAt:-1000
+};
+
+const AXIS_THRESHOLD=0.45;
+const GAMEPAD_MOVE_COOLDOWN=170;
+
+function toggleGamepadHint(show){ if(!gamepadHint) return; gamepadHint.classList.toggle('show', !!show); }
+
+function isFocusableForGamepad(el){
+  if(!(el instanceof HTMLElement)) return false;
+  if(el.hasAttribute('disabled') || el.getAttribute('aria-disabled')==='true') return false;
+  if(el.closest('[aria-hidden="true"]')) return false;
+  const style=getComputedStyle(el);
+  if(style.display==='none' || style.visibility==='hidden' || style.pointerEvents==='none') return false;
+  const rect=el.getBoundingClientRect();
+  return rect.width>0 && rect.height>0;
+}
+
+function clearGamepadFocus(){
+  document.querySelectorAll('.gamepad-focus').forEach(el=>{
+    el.classList.remove('gamepad-focus');
+    el.removeAttribute('data-gamepad-active');
+  });
+}
+
+function applyGamepadFocus(el){
+  clearGamepadFocus();
+  if(!GamepadState.connected || !el) return;
+  el.classList.add('gamepad-focus');
+  el.setAttribute('data-gamepad-active','true');
+  if(typeof el.focus==='function'){
+    try{ el.focus({preventScroll:true}); }
+    catch{ el.focus(); }
+  }
+}
+
+function refreshGamepadFocusTargets(reset=false){
+  GamepadState.focusables=Array.from(document.querySelectorAll('[data-gamepad-focus]')).filter(isFocusableForGamepad);
+  if(!GamepadState.focusables.length){
+    clearGamepadFocus();
+    return;
+  }
+  const modalActive = modalWrap && getComputedStyle(modalWrap).display!=='none';
+  if(modalActive){
+    const modalElements=GamepadState.focusables.filter(el=>modalWrap.contains(el));
+    if(modalElements.length){
+      const others=GamepadState.focusables.filter(el=>!modalWrap.contains(el));
+      GamepadState.focusables=[...modalElements,...others];
+    }
+  }
+  if(reset || GamepadState.focusIndex>=GamepadState.focusables.length){
+    GamepadState.focusIndex=0;
+  }
+  const target=GamepadState.focusables[GamepadState.focusIndex]||GamepadState.focusables[0];
+  GamepadState.focusIndex=Math.max(0, GamepadState.focusables.indexOf(target));
+  if(GamepadState.connected) applyGamepadFocus(GamepadState.focusables[GamepadState.focusIndex]);
+}
+
+function moveGamepadFocus(step){
+  if(!GamepadState.connected){ return; }
+  if(!GamepadState.focusables.length){ refreshGamepadFocusTargets(true); }
+  const list=GamepadState.focusables;
+  if(!list.length) return;
+  GamepadState.focusIndex=(GamepadState.focusIndex+step+list.length)%list.length;
+  applyGamepadFocus(list[GamepadState.focusIndex]);
+}
+
+function activateGamepadTarget(){
+  if(!GamepadState.connected) return;
+  const target=GamepadState.focusables[GamepadState.focusIndex];
+  if(target){ target.click(); }
+}
+
+function findVisible(selector){
+  return Array.from(document.querySelectorAll(selector)).find(isFocusableForGamepad);
+}
+
+function triggerGamepadBack(){
+  const back=findVisible('[data-gamepad-back]');
+  if(back){ back.click(); return; }
+  if(CURRENT_ROUTE!=='hub'){ navigate('hub'); }
+}
+
+function tagGamepadTargets(){
+  document.querySelectorAll('[data-route]').forEach(btn=>{
+    if(!btn.dataset.gamepadFocus) btn.setAttribute('data-gamepad-focus','route');
+    if(!btn.hasAttribute('aria-describedby')) btn.setAttribute('aria-describedby','gamepad-hint');
+    if(btn.dataset.route==='hub' && /back/i.test(btn.textContent||'')) btn.setAttribute('data-gamepad-back','true');
+  });
+  document.querySelectorAll('[data-ability]').forEach(btn=>{
+    btn.setAttribute('data-gamepad-focus','ability');
+    if(!btn.hasAttribute('aria-describedby')) btn.setAttribute('aria-describedby','gamepad-hint');
+  });
+  document.querySelectorAll('[data-quick]').forEach(btn=>{
+    btn.setAttribute('data-gamepad-focus','quick');
+    if(!btn.hasAttribute('aria-describedby')) btn.setAttribute('aria-describedby','gamepad-hint');
+  });
+  document.querySelectorAll('[data-start],[data-slot],[data-travel],[data-battle-region],[data-buy],[data-sell],[data-equip],[data-skill]').forEach(btn=>{
+    if(!btn.dataset.gamepadFocus) btn.setAttribute('data-gamepad-focus','action');
+    if(!btn.hasAttribute('aria-describedby')) btn.setAttribute('aria-describedby','gamepad-hint');
+  });
+  const runBtn=byId('btn-run');
+  if(runBtn){
+    runBtn.setAttribute('data-gamepad-focus','battle');
+    if(!runBtn.hasAttribute('aria-describedby')) runBtn.setAttribute('aria-describedby','gamepad-hint');
+  }
+  const equipBest=byId('btn-equip-best');
+  if(equipBest){
+    equipBest.setAttribute('data-gamepad-focus','action');
+    if(!equipBest.hasAttribute('aria-describedby')) equipBest.setAttribute('aria-describedby','gamepad-hint');
+  }
+  const learnPot=byId('btn-learn-potion');
+  if(learnPot){
+    learnPot.setAttribute('data-gamepad-focus','action');
+    if(!learnPot.hasAttribute('aria-describedby')) learnPot.setAttribute('aria-describedby','gamepad-hint');
+  }
+  const learnCrit=byId('btn-learn-critcap');
+  if(learnCrit){
+    learnCrit.setAttribute('data-gamepad-focus','action');
+    if(!learnCrit.hasAttribute('aria-describedby')) learnCrit.setAttribute('aria-describedby','gamepad-hint');
+  }
+  if(modalOK){ modalOK.setAttribute('data-gamepad-focus','modal'); }
+  if(modalCancel){
+    modalCancel.setAttribute('data-gamepad-focus','modal');
+    modalCancel.setAttribute('data-gamepad-back','true');
+  }
+  if(modalClose){
+    modalClose.setAttribute('data-gamepad-focus','modal');
+    modalClose.setAttribute('data-gamepad-back','true');
+  }
+}
+
+function handleGamepadConnection(pad){
+  if(!pad) return;
+  GamepadState.connected=true;
+  GamepadState.index=pad.index;
+  GamepadState.lastButtons=pad.buttons?.map(btn=>btn.pressed)||[];
+  GamepadState.lastMove=0;
+  toggleGamepadHint(true);
+  refreshGamepadFocusTargets(true);
+}
+
+function handleGamepadDisconnect(){
+  GamepadState.connected=false;
+  GamepadState.index=null;
+  GamepadState.lastButtons=[];
+  toggleGamepadHint(false);
+  clearGamepadFocus();
+}
+
+function pollGamepad(now){
+  if(typeof navigator==='undefined' || typeof navigator.getGamepads!=='function') return;
+  if(!GamepadState.connected){
+    if(now - GamepadState.scanAt>1000){
+      GamepadState.scanAt=now;
+      const pads=Array.from(navigator.getGamepads?.()||[]).filter(Boolean);
+      const pad=pads.find(p=>p.connected);
+      if(pad) handleGamepadConnection(pad);
+    }
+    return;
+  }
+  const pads=navigator.getGamepads?.();
+  const pad=pads && pads[GamepadState.index];
+  if(!pad || !pad.connected){ handleGamepadDisconnect(); return; }
+  const buttons=pad.buttons.map(btn=>btn.pressed);
+  const axes=pad.axes||[];
+  const stickY=Math.abs(axes[1]||0)>AXIS_THRESHOLD ? (axes[1]>0?1:-1) : 0;
+  const stickX=Math.abs(axes[0]||0)>AXIS_THRESHOLD ? (axes[0]>0?1:-1) : 0;
+  const dpadY=(buttons[13]?1:0)-(buttons[12]?1:0);
+  const dpadX=(buttons[15]?1:0)-(buttons[14]?1:0);
+  const vertical=dpadY||stickY;
+  const horizontal=dpadX||stickX;
+  const dir=vertical!==0?vertical:horizontal;
+  if(dir && now-GamepadState.lastMove>GAMEPAD_MOVE_COOLDOWN){
+    moveGamepadFocus(dir>0?1:-1);
+    GamepadState.lastMove=now;
+  }
+  if(buttons[0] && !GamepadState.lastButtons[0]) activateGamepadTarget();
+  if(buttons[1] && !GamepadState.lastButtons[1]) triggerGamepadBack();
+  if(CURRENT_ROUTE==='battle'){
+    const quickMap=[
+      {btn:2,slot:0},
+      {btn:3,slot:1},
+      {btn:5,slot:2}
+    ];
+    quickMap.forEach(({btn,slot})=>{
+      if(buttons[btn] && !GamepadState.lastButtons[btn]) useQuickSlot(slot);
+    });
+    if(buttons[4] && !GamepadState.lastButtons[4]){
+      const runBtn=byId('btn-run');
+      if(runBtn && !runBtn.disabled) runBtn.click();
+    }
+  }
+  GamepadState.lastButtons=buttons;
+}
 
 /* =========================================================================================
    Data: Classes, Rarities, Items, Abilities, Regions, Quests, Achievements
@@ -1260,7 +1470,7 @@ function renderBattle(){
   const p=State.data.player, b=State.data.world.battle;
   if(!b) return html`<div class="panel"><div class="body">No active battle.</div><div class="foot"><button class="btn" data-route="hub">Back</button></div></div>`;
   const abil=p.abilities.map((a,i)=>html`
-    <button class="btn ${a.cooldown>0||p.mp<a.cost?'':'primary'}" data-ability="${i}" ${a.cooldown>0||p.mp<a.cost?'disabled':''} title="${a.desc||a.name}">
+    <button class="btn ${a.cooldown>0||p.mp<a.cost?'':'primary'}" data-ability="${i}" data-gamepad-focus="ability" aria-describedby="gamepad-hint" ${a.cooldown>0||p.mp<a.cost?'disabled':''} title="${a.desc||a.name}">
       ${a.name} ${a.cost?`(${a.cost} MP)`:''} ${a.cooldown>0?`• ${a.cooldown}`:''}
     </button>`).join('');
   const enemies=b.enemies.map(e=>html`
@@ -1287,7 +1497,7 @@ function renderBattle(){
           ${[0,1,2].map(i=>{
             const id=State.data.player.quickSlots[i];
             const obj=id? State.data.player.inventory.find(it=>it.id===id):null;
-            return html`<button class="btn" data-quick="${i}" ${obj?'':'disabled'}>${obj?`${obj.name} ${obj.qty?`(x${obj.qty})`:''}`:`Empty`}</button>`;
+            return html`<button class="btn" data-quick="${i}" data-gamepad-focus="quick" aria-describedby="gamepad-hint" ${obj?'':'disabled'}>${obj?`${obj.name} ${obj.qty?`(x${obj.qty})`:''}`:`Empty`}</button>`;
           }).join('')}
         </div>
       </div>
@@ -1442,7 +1652,15 @@ function render(){
 }
 
 function afterRender(){
-  document.querySelectorAll('nav [data-route]').forEach(b=>b.addEventListener('click',e=>navigate(e.currentTarget.dataset.route)));
+  document.querySelectorAll('nav [data-route]').forEach(b=>{
+    b.addEventListener('click',e=>navigate(e.currentTarget.dataset.route));
+    b.setAttribute('aria-current', b.dataset.route===CURRENT_ROUTE ? 'page' : 'false');
+    if(!b.dataset.gamepadFocus) b.setAttribute('data-gamepad-focus','route');
+    if(!b.hasAttribute('aria-describedby')) b.setAttribute('aria-describedby','gamepad-hint');
+  });
+
+  tagGamepadTargets();
+  refreshGamepadFocusTargets(true);
 
   // title
   document.querySelectorAll('[data-start]').forEach(btn=>btn.addEventListener('click',e=>{
@@ -1611,7 +1829,14 @@ byId('btn-reset').addEventListener('click', ()=>{
 function confirmModal(title,body,onOK){
   modalTitle.textContent=title; modalBody.innerHTML=`<div class="muted">${body}</div>`;
   modalWrap.style.display='flex';
-  function close(){ modalWrap.style.display='none'; modalOK.onclick=null; modalCancel.onclick=null; modalClose.onclick=null; }
+  tagGamepadTargets();
+  refreshGamepadFocusTargets(true);
+  function close(){
+    modalWrap.style.display='none';
+    modalOK.onclick=null; modalCancel.onclick=null; modalClose.onclick=null;
+    tagGamepadTargets();
+    refreshGamepadFocusTargets(true);
+  }
   modalOK.onclick=()=>{ onOK?.(); close(); };
   modalCancel.onclick=close; modalClose.onclick=close;
 }
@@ -1638,6 +1863,21 @@ document.addEventListener('keydown',e=>{
   if(e.key===km.quick3) useQuickSlot(2);
 });
 
+/* Gamepad detection */
+window.addEventListener('gamepadconnected',e=>{
+  handleGamepadConnection(e.gamepad);
+});
+window.addEventListener('gamepaddisconnected',e=>{
+  if(!GamepadState.connected) return;
+  if(GamepadState.index!==e.gamepad.index) return;
+  if(typeof navigator==='undefined' || typeof navigator.getGamepads!=='function'){ handleGamepadDisconnect(); return; }
+  const remaining=Array.from(navigator.getGamepads?.()||[])
+    .filter(Boolean)
+    .filter(p=>p.connected && p.index!==e.gamepad.index);
+  if(remaining.length){ handleGamepadConnection(remaining[0]); }
+  else { handleGamepadDisconnect(); }
+});
+
 /* Shop restock loop */
 function startRestockTimer(){
   if(UIState.restockTick) clearInterval(UIState.restockTick);
@@ -1659,15 +1899,34 @@ function showKeymapModal(){
     <div class="stat"><span>${a.label}</span><span><input data-key="${a.id}" value="${km[a.id]||a.default}" /></span></div>
   `).join('');
   modalTitle.textContent='Key Bindings';
-  modalBody.innerHTML=`<div class="body">${rows}<div class="muted">Press Enter to save.</div></div>`;
+  const controllerDoc=`
+    <div class="sep"></div>
+    <div class="muted" style="font-size:12px">
+      <strong>Controller</strong>
+      <ul class="muted" style="margin:6px 0 0 18px;padding:0;list-style:disc;">
+        <li>D-Pad / Left Stick: Move focus</li>
+        <li>A: Activate highlighted control</li>
+        <li>B: Back or close</li>
+        <li>X / Y / RB: Quick Slots 1-3</li>
+        <li>LB: Attempt escape during battle</li>
+      </ul>
+    </div>`;
+  modalBody.innerHTML=`<div class="body">${rows}<div class="muted">Press Enter to save.</div>${controllerDoc}</div>`;
   modalWrap.style.display='flex';
-  modalOK.onclick=()=>{ /* apply in OK too */ saveKeymap(); modalWrap.style.display='none'; };
-  modalCancel.onclick=()=>{ modalWrap.style.display='none'; };
-  modalClose.onclick=()=>{ modalWrap.style.display='none'; };
+  tagGamepadTargets();
+  refreshGamepadFocusTargets(true);
+  const hideModal=()=>{
+    modalWrap.style.display='none';
+    tagGamepadTargets();
+    refreshGamepadFocusTargets(true);
+  };
+  modalOK.onclick=()=>{ /* apply in OK too */ saveKeymap(); hideModal(); };
+  modalCancel.onclick=hideModal;
+  modalClose.onclick=hideModal;
   modalBody.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('keydown',ev=>{
       ev.preventDefault();
-      if(ev.key==='Enter'){ saveKeymap(); modalWrap.style.display='none'; return; }
+      if(ev.key==='Enter'){ saveKeymap(); hideModal(); return; }
       inp.value=ev.key;
     });
   });
@@ -1689,12 +1948,14 @@ function showKeymapModal(){
   else { navigate('title'); }
   startRestockTimer();
   requestAnimationFrame(function frame(t){
-    // FPS EMA
-    const dt=performance.now()-t;
-    const fps=1/((performance.now()-t)/1000); UIState.fps=clamp(fps,0,240);
+    const now=performance.now();
+    const dt=now-t;
+    const fps=dt>0 ? 1000/dt : 0;
+    UIState.fps=clamp(fps,0,240);
     UIState.fpsEMA = UIState.fpsEMA? (UIState.fpsEMA*0.9 + UIState.fps*0.1) : UIState.fps;
     byId('dev-fps').textContent = UIState.fpsEMA.toFixed(0);
     if(needsRender) render();
+    pollGamepad(now);
     requestAnimationFrame(frame);
   });
 
