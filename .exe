@@ -1236,6 +1236,59 @@ function renderSkills(){
   </div>`;
 }
 
+function renderSettings(){
+  const textSpeedOptions=[
+    {value:'slow',label:'Slow'},
+    {value:'normal',label:'Normal'},
+    {value:'fast',label:'Fast'}
+  ];
+  const slotButtons=[0,1,2].map(i=>html`
+    <button class="btn small ${settings.slot===i?'primary':''}" data-slot="${i}">Slot ${i+1}</button>
+  `).join('');
+  return html`
+  <div class="panel">
+    <div class="head"><strong>Settings</strong><span class="muted">Tune how you play.</span></div>
+    <div class="body">
+      <h4 style="margin:.2em 0">Gameplay</h4>
+      <div class="stat">
+        <span>Autosave</span>
+        <span><label><input type="checkbox" data-setting="autosave" data-setting-type="bool" ${settings.autosave?'checked':''}/> Enable</label></span>
+      </div>
+      <div class="stat">
+        <span>Text Speed</span>
+        <span>
+          <select data-setting="textSpeed">
+            ${textSpeedOptions.map(opt=>html`<option value="${opt.value}" ${settings.textSpeed===opt.value?'selected':''}>${opt.label}</option>`).join('')}
+          </select>
+        </span>
+      </div>
+      <h4 style="margin:.2em 0">Audio & Visual</h4>
+      <div class="stat">
+        <span>Sound FX</span>
+        <span><label><input type="checkbox" data-setting="sfx" data-setting-type="bool" ${settings.sfx?'checked':''}/> Enable</label></span>
+      </div>
+      <div class="stat">
+        <span>Pixel Scale</span>
+        <span>
+          <input type="range" min="1" max="5" step="1" data-setting="pixelScale" data-setting-type="int" value="${settings.pixelScale}" />
+          <span class="muted" style="margin-left:8px">x${settings.pixelScale}</span>
+        </span>
+      </div>
+      <div class="stat">
+        <span>Reduce Motion</span>
+        <span><label><input type="checkbox" data-setting="reduceMotion" data-setting-type="bool" ${settings.reduceMotion?'checked':''}/> Enable</label></span>
+      </div>
+      <h4 style="margin:.2em 0">Save Slot</h4>
+      <div class="badges">${slotButtons}</div>
+      <div class="muted" style="font-size:12px">Choose where manual and autosaves are stored.</div>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" data-route="hub">Back</button>
+      <button class="btn primary" id="btn-settings-keymap">Edit Keybinds</button>
+    </div>
+  </div>`;
+}
+
 function renderCodex(){
   const p=State.data.player;
   const ach = Object.entries(p.achievements).map(([id,ts])=>{
@@ -1433,6 +1486,7 @@ function render(){
     case 'map': htmlOut=renderMap(); break;
     case 'shop': htmlOut=renderShop(); break;
     case 'skills': htmlOut=renderSkills(); break;
+    case 'settings': htmlOut=renderSettings(); break;
     case 'codex': htmlOut=renderCodex(); break;
     case 'battle': htmlOut=renderBattle(); break;
     default: htmlOut='<div class="muted">Unknown route.</div>';
@@ -1454,6 +1508,39 @@ function afterRender(){
   document.querySelectorAll('[data-slot]').forEach(b=>b.addEventListener('click',e=>{
     const n=+e.currentTarget.dataset.slot; settings.slot=n; toast(`Selected Slot ${n+1}`); saveGame();
   }));
+  const settingControls=document.querySelectorAll('[data-setting]');
+  if(settingControls.length){
+    const applySettingChange=el=>{
+      const key=el.dataset.setting;
+      const type=el.dataset.settingType||'text';
+      let value;
+      if(type==='bool'){ value=!!el.checked; }
+      else if(type==='int'){
+        value=parseInt(el.value,10);
+        if(Number.isNaN(value)) value=0;
+        if(el.min!==undefined && el.min!==''){ const min=parseInt(el.min,10); if(!Number.isNaN(min)) value=Math.max(min,value); }
+        if(el.max!==undefined && el.max!==''){ const max=parseInt(el.max,10); if(!Number.isNaN(max)) value=Math.min(max,value); }
+      }else{
+        value=el.value;
+      }
+      if(settings[key]===value) return;
+      settings[key]=value;
+      saveGame();
+      if(!State.data){
+        try{
+          const existing=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+          localStorage.setItem(SAVE_KEY, JSON.stringify({...existing,settings}));
+        }catch(err){ console.warn('settings-only save failed',err); }
+      }
+      scheduleRender();
+    };
+    settingControls.forEach(control=>{
+      const evt=control.dataset.settingEvent || 'change';
+      control.addEventListener(evt,e=>applySettingChange(e.currentTarget));
+    });
+  }
+  const editKeymap=byId('btn-settings-keymap');
+  if(editKeymap) editKeymap.addEventListener('click', showKeymapModal);
   const btnExp=byId('btn-export'); if(btnExp) btnExp.addEventListener('click', exportJSON);
   const fileImp=byId('file-import'); if(fileImp) fileImp.addEventListener('change', e=>{ const f=e.target.files[0]; if(f) importJSON(f); });
 
