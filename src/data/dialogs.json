@@ -1,0 +1,128 @@
+{
+  "elder_intro": {
+    "start": "greet",
+    "nodes": {
+      "greet": {
+        "speaker": "Elder Miren",
+        "text": "The siege tightens. Your shadow waits just beyond the lantern glow.",
+        "responses": [
+          { "text": "I'm ready.", "next": "tutorial_start", "setQuest": "tutorial" },
+          { "text": "Tell me again.", "next": "reminder" }
+        ]
+      },
+      "reminder": {
+        "speaker": "Elder Miren",
+        "text": "Swap with Q. Let the lantern breathe so the shadow may pass.",
+        "responses": [
+          { "text": "Understood.", "next": "tutorial_start" }
+        ]
+      },
+      "tutorial_start": {
+        "speaker": "Elder Miren",
+        "text": "Follow and we will reach the shrine.",
+        "responses": [
+          { "text": "Let's go.", "end": true }
+        ]
+      }
+    }
+  },
+  "smith_shop": {
+    "start": "offer",
+    "nodes": {
+      "offer": {
+        "speaker": "Forgewright",
+        "text": "Stock rotates with the siege. Fuel, charms—take what you need.",
+        "responses": [
+          { "text": "Show me fuel.", "shop": "fuel", "next": "thanks" },
+          { "text": "Need staying power.", "shop": "charm_stamina", "next": "thanks" },
+          { "text": "Just browsing.", "next": "bye" }
+        ]
+      },
+      "thanks": {
+        "speaker": "Forgewright",
+        "text": "Spend wisely. Momentum cuts both ways.",
+        "responses": [
+          { "text": "Will do.", "end": true }
+        ]
+      },
+      "bye": {
+        "speaker": "Forgewright",
+        "text": "Come back before the next surge.",
+        "responses": [
+          { "text": "Later.", "end": true }
+        ]
+      }
+    }
+  },
+  "scribe_lore": {
+    "start": "intro",
+    "nodes": {
+      "intro": {
+        "speaker": "Umbral Scribe",
+        "text": "Debt carves pathways in the dark. Appease it or be hollowed.",
+        "responses": [
+          { "text": "How do I appease it?", "next": "appease" },
+          { "text": "I can manage.", "next": "end" }
+        ]
+      },
+      "appease": {
+        "speaker": "Umbral Scribe",
+        "text": "Shrines drink fuel, trade it for leniency. Optional tasks ease the weight.",
+        "responses": [
+          { "text": "I'll remember.", "end": true }
+        ]
+      },
+      "end": {
+        "speaker": "Umbral Scribe",
+        "text": "Confidence is a sharp light. Do not let it blind you.",
+        "responses": [
+          { "text": "Farewell.", "end": true }
+        ]
+      }
+    }
+  },
+  "runner_hint": {
+    "start": "intro",
+    "nodes": {
+      "intro": {
+        "speaker": "Courier Iva",
+        "text": "Warehouse Row is crawling with Lightborn. Mirrors can pin them.",
+        "responses": [
+          { "text": "Any other tips?", "next": "tips" },
+          { "text": "Thanks.", "end": true }
+        ]
+      },
+      "tips": {
+        "speaker": "Courier Iva",
+        "text": "Dash through light, swap in dark pockets. Watch the debt meter when you slow time.",
+        "responses": [
+          { "text": "Got it.", "end": true }
+        ]
+      }
+    }
+  },
+  "shadow_bond": {
+    "start": "intro",
+    "nodes": {
+      "intro": {
+        "speaker": "Shadow",
+        "text": "We are halves of one blade. Call me when the light wanes.",
+        "responses": [
+          { "text": "Stay close.", "end": true }
+        ]
+      }
+    }
+  },
+  "warden_taunt": {
+    "start": "taunt",
+    "nodes": {
+      "taunt": {
+        "speaker": "Warden",
+        "text": "Lanterns answer to me. Your debt will ignite the city.",
+        "responses": [
+          { "text": "Not today.", "end": true }
+        ]
+      }
+    }
+  }
+}

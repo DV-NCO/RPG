@@ -1,0 +1,32 @@
+{
+  "lantern": {
+    "name": "Lantern",
+    "description": "Shifts light, scares Nightborn.",
+    "type": "equipment",
+    "price": 0
+  },
+  "fuel": {
+    "name": "Lantern Fuel",
+    "description": "Restores lantern capacity and appeases debt.",
+    "type": "consumable",
+    "price": 20
+  },
+  "charm_stamina": {
+    "name": "Iron Charm",
+    "description": "+20 stamina.",
+    "type": "charm",
+    "price": 80
+  },
+  "charm_debt": {
+    "name": "Umbral Charm",
+    "description": "+20 shadow debt cap.",
+    "type": "charm",
+    "price": 90
+  },
+  "dungeon_key": {
+    "name": "Lightworks Key",
+    "description": "Opens the Lightworks gate.",
+    "type": "key",
+    "price": 0
+  }
+}
