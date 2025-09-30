@@ -1,3 +1,4 @@
+<!-- /index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -365,6 +366,42 @@
       color: var(--warning);
     }
 
+    .overlay-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      background: rgba(12, 19, 28, 0.92);
+      border: 1px solid rgba(50, 78, 112, 0.9);
+      border-radius: 16px;
+      padding: 10px 18px;
+      box-shadow: 0 18px 28px rgba(0, 0, 0, 0.4);
+      z-index: 160;
+      display: none;
+      color: var(--muted);
+    }
+
+    .overlay-hint.show {
+      display: block;
+    }
+
+    [data-gamepad-focus].gamepad-focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 2px rgba(103, 183, 255, 0.35);
+      position: relative;
+      z-index: 10;
+    }
+
+    [data-gamepad-focus].gamepad-focus::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: inherit;
+      border: 1px solid rgba(103, 183, 255, 0.45);
+      pointer-events: none;
+    }
+
     .empty-state {
       text-align: center;
       padding: 26px 18px;
@@ -518,6 +555,7 @@
     <main id="view" role="main"></main>
   </div>
   <div id="toasts" class="toast-wrap" aria-live="polite" aria-atomic="false"></div>
+  <div class="overlay-hint" id="gamepad-hint" role="status" aria-live="polite">Gamepad detected. Use the stick or D-pad to navigate, A to activate, and B to backtrack.</div>
 
   <script>
     (() => {
@@ -629,9 +667,246 @@
       const toastWrap = document.getElementById('toasts');
       const saveBtn = document.getElementById('btn-save');
       const resetBtn = document.getElementById('btn-reset');
+      const gamepadHint = document.getElementById('gamepad-hint');
 
       let state = null;
       let currentRoute = 'title';
+
+      const GamepadState = {
+        connected: false,
+        padIndex: null,
+        focusables: [],
+        index: -1,
+        nextMove: 0,
+        buttonLatch: new Map(),
+        pollHandle: null
+      };
+
+      function decorateGamepadTargets(root = document) {
+        if (!root) return;
+        const elements = root.querySelectorAll('button, input, select');
+        elements.forEach((el) => {
+          if (el.tagName === 'BUTTON') {
+            if (!el.dataset.gamepadFocus) {
+              if (el.closest('nav')) {
+                el.dataset.gamepadFocus = 'route';
+              } else if (el.dataset.ability) {
+                el.dataset.gamepadFocus = 'ability';
+              } else if (el.dataset.node) {
+                el.dataset.gamepadFocus = 'map';
+              } else if (el.dataset.itemEquip || el.dataset.itemUse) {
+                el.dataset.gamepadFocus = 'inventory';
+              } else if (el.dataset.buy || el.dataset.sell) {
+                el.dataset.gamepadFocus = 'shop';
+              } else if (el.dataset.skill) {
+                el.dataset.gamepadFocus = 'skill';
+              } else if (el.dataset.claimQuest) {
+                el.dataset.gamepadFocus = 'quest';
+              } else if (el.id && el.id.startsWith('btn-')) {
+                el.dataset.gamepadFocus = 'action';
+              } else {
+                el.dataset.gamepadFocus = 'action';
+              }
+            }
+            if (!el.hasAttribute('aria-describedby')) {
+              el.setAttribute('aria-describedby', 'gamepad-hint');
+            }
+          } else {
+            if (!el.dataset.gamepadFocus) {
+              el.dataset.gamepadFocus = 'setting';
+            }
+            if (!el.hasAttribute('aria-describedby')) {
+              el.setAttribute('aria-describedby', 'gamepad-hint');
+            }
+          }
+        });
+        const retreat = root.querySelector('#btn-retreat');
+        if (retreat) {
+          retreat.setAttribute('data-gamepad-back', 'true');
+        }
+      }
+
+      function toggleGamepadHint(show) {
+        if (!gamepadHint) return;
+        gamepadHint.classList.toggle('show', !!show);
+      }
+
+      function isFocusableForGamepad(el) {
+        if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') return false;
+        const style = window.getComputedStyle(el);
+        if (style.visibility === 'hidden' || style.display === 'none') return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }
+
+      function clearGamepadFocus() {
+        GamepadState.focusables.forEach((el) => {
+          el.classList.remove('gamepad-focus');
+          el.removeAttribute('data-gamepad-active');
+        });
+        GamepadState.index = -1;
+      }
+
+      function ensureGamepadFocus(index) {
+        const list = GamepadState.focusables;
+        if (!list.length) {
+          clearGamepadFocus();
+          return;
+        }
+        const clamped = ((index % list.length) + list.length) % list.length;
+        if (GamepadState.index === clamped && list[clamped]?.classList.contains('gamepad-focus')) {
+          return;
+        }
+        if (GamepadState.index >= 0 && list[GamepadState.index]) {
+          list[GamepadState.index].classList.remove('gamepad-focus');
+          list[GamepadState.index].removeAttribute('data-gamepad-active');
+        }
+        GamepadState.index = clamped;
+        const target = list[clamped];
+        if (!target) return;
+        target.classList.add('gamepad-focus');
+        target.setAttribute('data-gamepad-active', 'true');
+        if (typeof target.scrollIntoView === 'function') {
+          target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+
+      function refreshGamepadFocusables() {
+        const focusables = Array.from(document.querySelectorAll('[data-gamepad-focus]')).filter(isFocusableForGamepad);
+        GamepadState.focusables = focusables;
+        if (!GamepadState.connected) {
+          clearGamepadFocus();
+          return;
+        }
+        if (!focusables.length) {
+          clearGamepadFocus();
+          return;
+        }
+        const current = focusables[GamepadState.index];
+        if (current) {
+          ensureGamepadFocus(GamepadState.index);
+        } else {
+          ensureGamepadFocus(0);
+        }
+      }
+
+      function moveGamepadFocus(delta) {
+        if (!GamepadState.connected || !GamepadState.focusables.length) return;
+        ensureGamepadFocus(GamepadState.index + delta);
+      }
+
+      function activateFocusedElement() {
+        if (!GamepadState.connected) return;
+        const el = GamepadState.focusables[GamepadState.index];
+        if (!el) return;
+        if (typeof el.click === 'function') {
+          el.click();
+        } else {
+          el.dispatchEvent(new Event('click', { bubbles: true }));
+        }
+      }
+
+      function triggerGamepadBack() {
+        if (!GamepadState.connected) return;
+        const backEl = GamepadState.focusables.find((el) => el.dataset.gamepadBack && isFocusableForGamepad(el));
+        if (backEl) {
+          backEl.click();
+          return;
+        }
+        const navBack = Array.from(document.querySelectorAll('nav [data-route]')).find((btn) => !btn.disabled);
+        if (navBack) {
+          navBack.click();
+        }
+      }
+
+      function handleGamepadButtons(pad) {
+        const mapping = [
+          { index: 12, delta: -1 },
+          { index: 13, delta: 1 },
+          { index: 14, delta: -1 },
+          { index: 15, delta: 1 }
+        ];
+        const now = performance.now();
+        mapping.forEach(({ index, delta }) => {
+          const pressed = !!pad.buttons[index]?.pressed;
+          const prev = GamepadState.buttonLatch.get(index) || false;
+          if (pressed && !prev) {
+            moveGamepadFocus(delta);
+            GamepadState.nextMove = now + 220;
+          }
+          GamepadState.buttonLatch.set(index, pressed);
+        });
+
+        const buttonActions = [
+          { index: 0, action: activateFocusedElement },
+          { index: 1, action: triggerGamepadBack },
+          { index: 4, action: triggerGamepadBack }
+        ];
+        buttonActions.forEach(({ index, action }) => {
+          const pressed = !!pad.buttons[index]?.pressed;
+          const prev = GamepadState.buttonLatch.get(index) || false;
+          if (pressed && !prev) {
+            action();
+          }
+          GamepadState.buttonLatch.set(index, pressed);
+        });
+      }
+
+      function processGamepad(pad) {
+        if (!pad) return;
+        handleGamepadButtons(pad);
+        const horizontal = pad.axes[0] || 0;
+        const vertical = pad.axes[1] || 0;
+        const dominant = Math.abs(horizontal) > Math.abs(vertical) ? horizontal : vertical;
+        const direction = Math.abs(dominant) > 0.5 ? (dominant > 0 ? 1 : -1) : 0;
+        const now = performance.now();
+        if (direction !== 0) {
+          if (GamepadState.nextMove <= now) {
+            moveGamepadFocus(direction);
+            GamepadState.nextMove = now + 260;
+          }
+        } else {
+          GamepadState.nextMove = 0;
+        }
+      }
+
+      function pollGamepad() {
+        if (!GamepadState.connected) return;
+        const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+        const pad = pads[GamepadState.padIndex];
+        if (!pad) {
+          handleGamepadDisconnection({ index: GamepadState.padIndex });
+          return;
+        }
+        processGamepad(pad);
+        GamepadState.pollHandle = window.requestAnimationFrame(pollGamepad);
+      }
+
+      function handleGamepadConnection(pad) {
+        if (!pad) return;
+        GamepadState.connected = true;
+        GamepadState.padIndex = pad.index;
+        GamepadState.buttonLatch.clear();
+        toggleGamepadHint(true);
+        refreshGamepadFocusables();
+        if (!GamepadState.pollHandle) {
+          GamepadState.pollHandle = window.requestAnimationFrame(pollGamepad);
+        }
+      }
+
+      function handleGamepadDisconnection(pad) {
+        if (!pad || pad.index !== GamepadState.padIndex) return;
+        GamepadState.connected = false;
+        GamepadState.padIndex = null;
+        GamepadState.buttonLatch.clear();
+        GamepadState.nextMove = 0;
+        if (GamepadState.pollHandle) {
+          window.cancelAnimationFrame(GamepadState.pollHandle);
+          GamepadState.pollHandle = null;
+        }
+        toggleGamepadHint(false);
+        clearGamepadFocus();
+      }
 
       function defaultState() {
         return {
@@ -800,6 +1075,8 @@
         saveBtn.disabled = !state.meta.started;
         resetBtn.disabled = false;
         ROUTE_RENDERERS[currentRoute]?.();
+        decorateGamepadTargets(view);
+        refreshGamepadFocusables();
       }
 
       function renderTitle() {
@@ -1530,7 +1807,12 @@
             setRoute(nextRoute);
           }
         });
+        decorateGamepadTargets(document.querySelector('nav'));
+        refreshGamepadFocusables();
       }
+
+      window.addEventListener('gamepadconnected', (event) => handleGamepadConnection(event.gamepad));
+      window.addEventListener('gamepaddisconnected', (event) => handleGamepadDisconnection(event.gamepad));
 
       function init() {
         bindNav();
