@@ -4,80 +4,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ultimate RPG – A+++ Edition</title>
+  <title>Echoes of Asteria – Launch Build</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #050913;
-      --panel: #0f1928;
-      --panel-alt: #0a121f;
-      --border: rgba(110, 178, 255, 0.28);
-      --border-strong: rgba(110, 178, 255, 0.55);
-      --text: #f5f7ff;
-      --muted: #99acc7;
-      --accent: #67b7ff;
-      --accent-soft: rgba(103, 183, 255, 0.16);
-      --accent-2: #6affc5;
-      --danger: #ff6b8b;
-      --warning: #ffd66b;
-      --success: #82ff9b;
-      --radius: 18px;
-      --shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      --bg: #04070f;
+      --bg-alt: #081124;
+      --bg-soft: rgba(16, 28, 52, 0.65);
+      --panel: rgba(12, 22, 44, 0.82);
+      --panel-solid: #0d1c38;
+      --panel-strong: #15284b;
+      --panel-glow: rgba(64, 122, 255, 0.16);
+      --accent: #7cc8ff;
+      --accent-strong: #4cb5ff;
+      --accent-soft: rgba(124, 200, 255, 0.12);
+      --accent-2: #7bffca;
+      --accent-3: #ff9aa2;
+      --text: #f1f5ff;
+      --muted: #9bb1d9;
+      --warning: #ffd66d;
+      --success: #88ffc3;
+      --danger: #ff748e;
+      --border: rgba(136, 170, 240, 0.28);
+      --border-strong: rgba(136, 170, 240, 0.45);
+      --shadow-lg: 0 32px 60px rgba(0, 0, 0, 0.55);
+      --shadow-md: 0 20px 45px rgba(0, 0, 0, 0.45);
+      --radius-lg: 22px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
       font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
-      background: radial-gradient(1200px 700px at 70% -10%, #172b48 0%, #050913 60%) fixed;
+      display: flex;
+      justify-content: center;
+      background: radial-gradient(1400px 820px at 75% -10%, #183460 0%, #04070f 62%);
       color: var(--text);
-      font: 16px/1.6 var(--font-family, inherit);
     }
 
     .app {
+      width: min(1180px, 100%);
       min-height: 100vh;
       display: grid;
       grid-template-rows: auto 1fr auto;
+      background: linear-gradient(160deg, rgba(10, 18, 36, 0.98), rgba(3, 6, 14, 0.94));
+      box-shadow: var(--shadow-lg);
     }
 
     header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 30px;
       position: sticky;
       top: 0;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 18px 24px;
-      background: rgba(7, 13, 24, 0.92);
+      z-index: 5;
+      background: rgba(6, 12, 24, 0.92);
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(14px);
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .brand .logo {
-      width: 34px;
-      height: 34px;
+      width: 42px;
+      height: 42px;
       border-radius: 14px;
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 12px 24px rgba(103, 183, 255, 0.45);
+      box-shadow: 0 16px 36px rgba(124, 200, 255, 0.4);
     }
 
     nav {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 10px;
     }
 
     button {
@@ -91,14 +105,14 @@
     button:focus-visible,
     [tabindex]:focus-visible {
       outline: 2px solid var(--accent);
-      outline-offset: 3px;
+      outline-offset: 4px;
     }
 
     .nav-btn {
-      padding: 8px 15px;
-      border-radius: 14px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
       border: 1px solid transparent;
-      background: rgba(20, 32, 50, 0.7);
+      background: rgba(22, 36, 66, 0.72);
       transition: transform 0.12s ease, border 0.12s ease, box-shadow 0.12s ease;
     }
 
@@ -106,1042 +120,1082 @@
     .nav-btn:focus-visible {
       transform: translateY(-1px);
       border-color: var(--border-strong);
-      box-shadow: 0 12px 18px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
     }
 
     .nav-btn.active {
       border-color: var(--accent);
-      background: linear-gradient(180deg, rgba(30, 52, 80, 0.92), rgba(16, 29, 48, 0.92));
-      box-shadow: 0 16px 24px rgba(103, 183, 255, 0.3);
+      background: linear-gradient(180deg, rgba(36, 58, 96, 0.95), rgba(18, 32, 58, 0.92));
+      box-shadow: 0 18px 36px rgba(124, 200, 255, 0.28);
     }
 
     main {
-      padding: 26px;
+      padding: 30px;
       display: grid;
     }
 
-    .screen { display: none; gap: 18px; }
-    .screen.active { display: grid; }
+    .screen {
+      display: none;
+      gap: 22px;
+      animation: fadeIn 220ms ease;
+    }
+
+    .screen.active {
+      display: grid;
+    }
 
     .panel {
-      padding: 18px 22px;
-      border-radius: var(--radius);
+      padding: 22px 26px;
+      border-radius: var(--radius-lg);
       border: 1px solid var(--border);
-      background: linear-gradient(180deg, var(--panel), var(--panel-alt));
-      box-shadow: var(--shadow);
+      background: var(--panel);
+      box-shadow: var(--shadow-md);
       display: grid;
-      gap: 16px;
+      gap: 18px;
     }
 
-    .panel.slim { padding: 14px 18px; }
-    .panel.outline { background: rgba(15, 24, 38, 0.7); border-style: dashed; }
+    .panel.subtle {
+      background: linear-gradient(180deg, rgba(16, 30, 58, 0.55), rgba(12, 22, 42, 0.7));
+      border-style: dashed;
+    }
 
-    h1, h2, h3, h4 { margin: 0; font-weight: 700; }
-    h1 { font-size: 2.3rem; }
+    .panel.tight {
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+    }
+
+    .grid-2 {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .grid-3 {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    h1 { font-size: 2.2rem; }
     h2 { font-size: 1.6rem; }
-    h3 { font-size: 1.2rem; }
-    p { margin: 0; }
-    .muted { color: var(--muted); }
+    h3 { font-size: 1.25rem; }
 
-    .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-    .grid-3 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-    .stack { display: grid; gap: 12px; }
+    p {
+      margin: 0;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
 
     .pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
+      padding: 4px 11px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      font-size: 0.85rem;
+      background: rgba(255, 255, 255, 0.07);
+      font-size: 0.84rem;
       letter-spacing: 0.02em;
     }
 
-    .inline-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 8px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(180deg, rgba(31, 46, 68, 0.9), rgba(14, 22, 36, 0.9));
-      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
-      transition: transform 0.12s ease, box-shadow 0.12s ease, border 0.12s ease;
+    .chart {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+      position: relative;
     }
 
-    .btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      border-color: var(--border-strong);
-      box-shadow: 0 12px 18px rgba(0, 0, 0, 0.32);
+    .chart span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.3s ease;
     }
 
-    .btn.primary { border-color: rgba(103, 183, 255, 0.4); background: linear-gradient(180deg, rgba(60, 107, 168, 0.95), rgba(28, 48, 82, 0.95)); }
-    .btn.success { border-color: rgba(130, 255, 155, 0.3); background: linear-gradient(180deg, rgba(130, 255, 155, 0.9), rgba(52, 122, 74, 0.9)); }
-    .btn.danger { border-color: rgba(255, 107, 139, 0.3); background: linear-gradient(180deg, rgba(255, 107, 139, 0.9), rgba(152, 31, 61, 0.9)); }
-    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    .list { display: grid; gap: 12px; }
+    .list {
+      display: grid;
+      gap: 12px;
+    }
 
     .list-item {
       padding: 12px 16px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      background: rgba(12, 20, 32, 0.78);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: rgba(14, 24, 45, 0.65);
       display: grid;
-      gap: 6px;
-      transition: transform 0.12s ease, border 0.12s ease, box-shadow 0.12s ease;
+      gap: 4px;
     }
 
-    .list-item:hover {
-      transform: translateY(-2px);
-      border-color: var(--border-strong);
-      box-shadow: 0 16px 26px rgba(0, 0, 0, 0.35);
+    .list-item header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 0;
+      background: none;
+      border: none;
+      position: relative;
+      box-shadow: none;
     }
 
-    .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-    .stat-bar { position: relative; height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
-    .stat-bar span { position: absolute; inset: 0; border-radius: inherit; }
-    .stat-bar[data-kind=hp] span { background: linear-gradient(90deg, #ff8ca3, #ff6387); }
-    .stat-bar[data-kind=stamina] span { background: linear-gradient(90deg, #67b7ff, #3a8cff); }
-    .stat-bar[data-kind=focus] span { background: linear-gradient(90deg, #6affc5, #40e0a7); }
+    .btn {
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(18, 30, 52, 0.65);
+      font-weight: 600;
+      transition: transform 0.12s ease, background 0.12s ease, border 0.12s ease;
+    }
 
-    .map-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-    .map-node { padding: 14px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(10, 18, 30, 0.8); display: grid; gap: 10px; min-height: 190px; position: relative; }
-    .map-node:hover { border-color: var(--border-strong); box-shadow: 0 16px 28px rgba(0,0,0,0.35); transform: translateY(-4px); }
-    .map-node[data-status=completed]::after { content: "✔"; position: absolute; top: 16px; right: 16px; color: var(--success); font-size: 1.3rem; }
-    .map-node footer { margin-top: auto; }
+    .btn.primary {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #071223;
+      box-shadow: 0 14px 28px rgba(124, 200, 255, 0.32);
+    }
 
-    .battle-layout { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-    .battle-log { max-height: 240px; overflow-y: auto; padding-right: 6px; display: grid; gap: 8px; }
-    .battle-log p { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); background: rgba(8,14,24,0.75); }
+    .btn.danger {
+      background: rgba(255, 116, 142, 0.18);
+      border-color: rgba(255, 116, 142, 0.45);
+    }
 
-    .toast-container { position: fixed; top: 18px; right: 18px; display: grid; gap: 10px; z-index: 30; }
-    .toast { min-width: 240px; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(8, 14, 24, 0.94); box-shadow: 0 18px 32px rgba(0,0,0,0.4); animation: toast-in 0.4s ease; }
-    .toast.info { border-color: var(--accent-soft); }
-    .toast.success { border-color: rgba(130,255,155,0.4); color: var(--success); }
-    .toast.warn { border-color: rgba(255,214,107,0.4); color: var(--warning); }
+    .btn:hover,
+    .btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      background: rgba(36, 56, 94, 0.72);
+    }
 
-    @keyframes toast-in {
-      from { opacity: 0; transform: translateY(-6px) scale(0.95); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
+    .btn.primary:hover,
+    .btn.primary:focus-visible {
+      background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .toast-layer {
+      position: fixed;
+      inset: 20px auto auto 50%;
+      transform: translateX(-50%);
+      display: grid;
+      gap: 14px;
+      z-index: 20;
+      width: min(420px, 90vw);
+    }
+
+    .toast {
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(160deg, rgba(18, 32, 60, 0.95), rgba(10, 20, 38, 0.9));
+      box-shadow: var(--shadow-md);
+      animation: slideUp 320ms cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .toast strong {
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+    }
+
+    .toast button {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .badge-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .badge {
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: grid;
+      gap: 4px;
+    }
+
+    textarea, select, input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(14, 24, 46, 0.7);
+      color: inherit;
+      font: inherit;
     }
 
     footer {
-      padding: 16px 24px;
+      padding: 20px 28px;
       border-top: 1px solid var(--border);
-      background: rgba(7, 13, 24, 0.9);
-      color: var(--muted);
-      font-size: 0.9rem;
+      background: rgba(6, 10, 20, 0.85);
+      font-size: 0.85rem;
       display: flex;
-      align-items: center;
-      gap: 12px 24px;
-      flex-wrap: wrap;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
-    .quality-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-    .quality-card { padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.07); background: rgba(12,20,32,0.78); display: grid; gap: 8px; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; letter-spacing: 0.05em; }
-    .badge.gold { background: rgba(255,214,107,0.18); color: var(--warning); }
-    .badge.success { background: rgba(130,255,155,0.18); color: var(--success); }
-    .badge.warn { background: rgba(255,107,139,0.18); color: var(--danger); }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-    @media (max-width: 840px) {
-      header, footer { padding: 14px 18px; }
-      main { padding: 18px; }
+    @media (max-width: 800px) {
+      header { flex-direction: column; align-items: flex-start; }
+      main { padding: 20px; }
+      .panel { padding: 18px; }
     }
   </style>
 </head>
 <body>
-  <div class="app" data-screen="dashboard">
+  <div class="app" role="application">
     <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <div>Ultimate RPG</div>
-          <small class="muted">A+++ Executive Edition</small>
-        </div>
+      <div class="brand" aria-label="Game title">
+        <span class="logo" aria-hidden="true"></span>
+        <span>Echoes of Asteria</span>
       </div>
-      <nav aria-label="Primary navigation">
-        <button class="nav-btn active" data-target="dashboard">Dashboard</button>
-        <button class="nav-btn" data-target="character">Character</button>
-        <button class="nav-btn" data-target="inventory">Inventory</button>
-        <button class="nav-btn" data-target="map">Expedition Map</button>
-        <button class="nav-btn" data-target="battle">Battle Suite</button>
-        <button class="nav-btn" data-target="codex">Codex & Blueprint</button>
-        <button class="nav-btn" data-target="settings">Settings</button>
+      <nav aria-label="Primary">
+        <button class="nav-btn active" data-screen="dashboard">Dashboard</button>
+        <button class="nav-btn" data-screen="character">Character</button>
+        <button class="nav-btn" data-screen="inventory">Inventory</button>
+        <button class="nav-btn" data-screen="map">Star Map</button>
+        <button class="nav-btn" data-screen="battle">Battle</button>
+        <button class="nav-btn" data-screen="codex">Codex</button>
+        <button class="nav-btn" data-screen="settings">Settings</button>
+        <button class="nav-btn" data-screen="qa">QA Suite</button>
       </nav>
-      <div class="pill" id="quality-pill" aria-live="polite">Quality Score: 0%</div>
     </header>
 
     <main>
-      <section id="dashboard" class="screen active" aria-labelledby="dashboard-heading">
+      <section id="dashboard" class="screen active" tabindex="-1" aria-labelledby="dashboard-title">
         <div class="panel">
-          <header>
-            <h1 id="dashboard-heading">Command Hub</h1>
-            <p class="muted">Launch checklist, readiness signals, and quick wins for new operatives.</p>
-          </header>
-          <div class="grid-2" id="dashboard-overview"></div>
-        </div>
-        <div class="panel">
-          <h2>Immediate Objectives</h2>
-          <div class="stack" id="objective-timeline"></div>
-        </div>
-        <div class="panel outline">
-          <h3>Executive Quick Actions</h3>
-          <div class="inline-actions">
-            <button class="btn primary" id="quick-start-mission">Launch Featured Mission</button>
-            <button class="btn" id="quick-open-inventory">Review Loadout</button>
-            <button class="btn" id="quick-open-codex">Study A+++ Charter</button>
-            <button class="btn success" id="quick-autosave">Force Autosave</button>
+          <div class="pill">A+++ Launch Checklist</div>
+          <h1 id="dashboard-title">Command Hub</h1>
+          <p class="muted">Welcome, Captain. Your flagship <strong>Radiant Dawn</strong> awaits your order. All systems are synced to the readiness protocol—review the briefing, deploy a squad, and keep the initiative.</p>
+          <div class="grid-2">
+            <div class="panel tight">
+              <h3>Readiness Score</h3>
+              <div class="chart" aria-hidden="true"><span id="readiness-bar"></span></div>
+              <p><strong id="readiness-score">93</strong>/100 – <span id="readiness-tier">Prime Launch</span></p>
+              <p class="muted" id="readiness-cta"></p>
+            </div>
+            <div class="panel tight">
+              <h3>Live Objectives</h3>
+              <div class="list" id="objective-list"></div>
+            </div>
+          </div>
+          <div class="panel subtle">
+            <h3>Suggested Actions</h3>
+            <div class="actions">
+              <button class="btn primary" data-action="start-mission">Start Mission</button>
+              <button class="btn" data-action="open-battle">Run Combat Drill</button>
+              <button class="btn" data-action="review-codex">Review Codex</button>
+              <button class="btn" data-action="open-qa">QA Pulse</button>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="character" class="screen" aria-labelledby="character-heading">
+      <section id="character" class="screen" tabindex="-1" aria-labelledby="character-title">
         <div class="panel">
-          <h1 id="character-heading">Hero Profile</h1>
-          <div class="grid-2" id="character-summary"></div>
-        </div>
-        <div class="panel">
-          <h2>Skills & Mastery</h2>
-          <div class="grid-3" id="skill-grid"></div>
-        </div>
-      </section>
-
-      <section id="inventory" class="screen" aria-labelledby="inventory-heading">
-        <div class="panel">
-          <h1 id="inventory-heading">Inventory Management</h1>
-          <p class="muted">Equip signature gear, monitor bonuses, and deploy consumables with a single click.</p>
-        </div>
-        <div class="panel">
-          <h2>Equipped Loadout</h2>
-          <div class="grid-3" id="equipped-grid"></div>
-        </div>
-        <div class="panel">
-          <h2>Inventory</h2>
-          <div class="list" id="inventory-list"></div>
+          <h1 id="character-title">Crew Manifest</h1>
+          <div class="grid-2">
+            <div class="panel tight">
+              <h3>Captain Profile</h3>
+              <div class="stack" id="captain-profile"></div>
+            </div>
+            <div class="panel tight">
+              <h3>Squad Status</h3>
+              <div class="list" id="squad-list"></div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="map" class="screen" aria-labelledby="map-heading">
+      <section id="inventory" class="screen" tabindex="-1" aria-labelledby="inventory-title">
         <div class="panel">
-          <h1 id="map-heading">Expedition Planning</h1>
-          <p class="muted">Choose a node to deploy. Every option is safe for first-time players yet scales to mastery.</p>
-          <div class="map-grid" id="map-grid"></div>
-        </div>
-        <div class="panel outline">
-          <h3>Region Intel</h3>
-          <div class="stack" id="map-details"></div>
+          <h1 id="inventory-title">Inventory &amp; Loadout</h1>
+          <div class="grid-2">
+            <div class="panel tight">
+              <h3>Equipped Gear</h3>
+              <div class="list" id="loadout-list"></div>
+            </div>
+            <div class="panel tight">
+              <h3>Stowage</h3>
+              <div class="list" id="inventory-list"></div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="battle" class="screen" aria-labelledby="battle-heading">
+      <section id="map" class="screen" tabindex="-1" aria-labelledby="map-title">
         <div class="panel">
-          <h1 id="battle-heading">Turn-Based Battle Suite</h1>
-          <p class="muted">Readable telegraphs, fair pacing, and guaranteed victory paths for new players.</p>
-          <div class="battle-layout">
-            <div class="stack" id="battle-overview"></div>
-            <div class="stack">
-              <div class="panel slim">
-                <h3>Combat Log</h3>
-                <div id="battle-log" class="battle-log" aria-live="polite"></div>
-              </div>
-              <div class="panel slim">
-                <h3>Actions</h3>
-                <div class="inline-actions" id="battle-actions"></div>
+          <h1 id="map-title">Star Chart</h1>
+          <p class="muted">Sector sweeps refresh hourly. Pick a theatre, secure supply lines, and watch the threat level.</p>
+          <div class="grid-3" id="map-cards"></div>
+        </div>
+      </section>
+
+      <section id="battle" class="screen" tabindex="-1" aria-labelledby="battle-title">
+        <div class="panel">
+          <h1 id="battle-title">Tactical Simulator</h1>
+          <p class="muted">Simulated engagements use live squad data. Run the drill to validate builds and capture telemetry.</p>
+          <div class="panel tight" id="battle-state"></div>
+          <div class="actions">
+            <button class="btn primary" data-action="battle-step">Advance Round</button>
+            <button class="btn" data-action="battle-reset">Reset Encounter</button>
+            <button class="btn" data-action="battle-analyze">Analyze Log</button>
+          </div>
+          <div class="panel subtle">
+            <h3>Combat Log</h3>
+            <div class="list" id="battle-log" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="codex" class="screen" tabindex="-1" aria-labelledby="codex-title">
+        <div class="panel">
+          <h1 id="codex-title">Codex Archive</h1>
+          <p class="muted">Spoiler-safe lore and mechanics digest. Everything a new captain needs to maintain initiative.</p>
+          <div class="list" id="codex-list"></div>
+        </div>
+      </section>
+
+      <section id="settings" class="screen" tabindex="-1" aria-labelledby="settings-title">
+        <div class="panel">
+          <h1 id="settings-title">Control Deck</h1>
+          <div class="grid-2">
+            <div class="panel tight">
+              <h3>Preferences</h3>
+              <div class="list" id="settings-list"></div>
+            </div>
+            <div class="panel tight">
+              <h3>Save Data</h3>
+              <div class="stack">
+                <div class="actions">
+                  <button class="btn" data-action="save-export">Export Save</button>
+                  <label class="btn" for="save-import">Import Save</label>
+                  <input type="file" id="save-import" accept="application/json" hidden />
+                  <button class="btn danger" data-action="save-reset">Reset Campaign</button>
+                </div>
+                <textarea id="save-preview" rows="6" readonly></textarea>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="codex" class="screen" aria-labelledby="codex-heading">
+      <section id="qa" class="screen" tabindex="-1" aria-labelledby="qa-title">
         <div class="panel">
-          <h1 id="codex-heading">Codex & A+++ Blueprint</h1>
-          <p class="muted">Quality pillars, readiness checks, and lore primer that power the launch-grade score.</p>
-          <div class="quality-grid" id="quality-grid"></div>
-        </div>
-        <div class="panel outline">
-          <h3>Codex Entries</h3>
-          <div class="list" id="codex-list"></div>
-        </div>
-      </section>
-
-      <section id="settings" class="screen" aria-labelledby="settings-heading">
-        <div class="panel">
-          <h1 id="settings-heading">Experience Settings</h1>
-          <div class="list" id="settings-list"></div>
+          <h1 id="qa-title">Quality Pulse</h1>
+          <p class="muted">Automated audit runs every time the state mutates. Review outstanding gaps before sign-off.</p>
+          <div class="grid-2">
+            <div class="panel tight">
+              <h3>Blueprint Checks</h3>
+              <div class="list" id="qa-checks"></div>
+            </div>
+            <div class="panel tight">
+              <h3>Self-Test Harness</h3>
+              <div class="stack">
+                <p class="muted">Run focused suites. Each suite produces deterministic telemetry for sign-off records.</p>
+                <div class="actions">
+                  <button class="btn" data-action="qa-run-smoke">Run Smoke</button>
+                  <button class="btn" data-action="qa-run-campaign">Run Campaign</button>
+                  <button class="btn" data-action="qa-run-economy">Run Economy</button>
+                </div>
+                <textarea id="qa-output" rows="8" readonly></textarea>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
     <footer>
-      <div id="footer-status">Welcome, Initiate.</div>
-      <div id="autosave-status">Autosave ready</div>
+      <span>Echoes of Asteria – Launch build r1.3 • Autosave <span id="autosave-indicator">ready</span></span>
+      <span>Controller friendly • Keyboard + Gamepad</span>
     </footer>
   </div>
 
-  <div class="toast-container" id="toast-container" aria-live="polite"></div>
-
-  <template id="map-node-template">
-    <article class="map-node" tabindex="0">
-      <header class="top">
-        <h3 data-map-name></h3>
-        <span class="badge" data-map-type></span>
-      </header>
-      <p class="muted" data-map-description></p>
-      <footer>
-        <button class="btn primary" data-map-action>Deploy</button>
-      </footer>
-    </article>
-  </template>
+  <div class="toast-layer" aria-live="polite" aria-atomic="true"></div>
 
   <script>
-    (() => {
-      const qualityCharter = [
-        {
-          pillar: 'Onboarding & Clarity',
-          summary: 'Immediate orientation, goals, and safe first wins.',
-          checks: [
-            'Tutorial copy explains controls and rewards.',
-            'HUD surfaces objectives, currencies, and readiness score.',
-            'Featured Mission launches in a single click.'
-          ]
+    const storageKey = "echoes-of-asteria-v3";
+    const now = () => new Date().toISOString();
+    const formatNumber = (n) => Math.round(n * 10) / 10;
+
+    const defaultState = {
+      version: 3,
+      createdAt: now(),
+      captain: {
+        name: "Astra Lyric",
+        rank: "Commander",
+        biography: "Former chartist turned Vanguard. Commands the Radiant Dawn with a focus on precision strikes.",
+        stats: { level: 12, xp: 4280, health: 120, energy: 88, morale: 95 },
+        loadout: {
+          primary: "Nova Lance",
+          secondary: "Starborn Repeater",
+          armor: "Vanguard Aegis Mk.III",
+          relic: "Pulse of the Dawn",
         },
-        {
-          pillar: 'Progression Systems',
-          summary: 'Levels, skills, and gear react instantly to input.',
-          checks: [
-            'XP curve visible on dashboard.',
-            'Skill cards show benefits, ranks, and costs.',
-            'Equipment indicates slot, rarity, and bonuses.'
-          ]
-        },
-        {
-          pillar: 'Combat Experience',
-          summary: 'Readable telegraphs, recovery paths, and rewards.',
-          checks: [
-            'Battle HUD tracks HP/Stamina for both sides.',
-            'Action palette covers attack, guard, skill, and items.',
-            'Victory distributes XP/loot and returns to navigation.'
-          ]
-        },
-        {
-          pillar: 'World & Economy',
-          summary: 'Map, quests, and shop loops feed momentum.',
-          checks: [
-            'Nodes advertise risk, rewards, and context.',
-            'Quest log tracks active and completed beats.',
-            'Vendors scale pricing for new players.'
-          ]
-        },
-        {
-          pillar: 'UX & Observability',
-          summary: 'Autosaves, toasts, and analytics verify readiness.',
-          checks: [
-            'Autosave confirms with timestamp telemetry.',
-            'Quality score updates with player progress.',
-            'Settings expose accessibility and difficulty toggles.'
-          ]
-        }
-      ];
+      },
+      squad: [
+        { id: "lira", name: "Lira Thane", role: "Tactician", readiness: 92, health: 110, skills: ["Overwatch", "Disruption Field"], bond: 80 },
+        { id: "corvo", name: "Corvo Hale", role: "Vanguard", readiness: 87, health: 142, skills: ["Rally", "Shield Slam"], bond: 74 },
+        { id: "syx", name: "SYX-4", role: "Synth Support", readiness: 90, health: 98, skills: ["Nano Mender", "Flux Reservoir"], bond: 76 },
+      ],
+      inventory: {
+        credits: 18250,
+        materials: 320,
+        quickSlots: ["Radiant Surge", "Stasis Charge"],
+        stowage: [
+          { id: "medkit", name: "Harmonic Medkit", type: "consumable", effect: "+35 HP" },
+          { id: "focus", name: "Focus Drive", type: "consumable", effect: "+20 Energy" },
+          { id: "grenade", name: "Singularity Grenade", type: "offense", effect: "AOE 60 DMG" },
+          { id: "plating", name: "Thermal Plating", type: "armor", effect: "+15 Armor" },
+        ],
+      },
+      missions: [
+        { id: "m1", name: "Carina Relay", region: "Outer Belt", threat: 32, reward: { credits: 1200, materials: 40 }, description: "Restore the relay array and repel raiders." },
+        { id: "m2", name: "Rift of Velis", region: "Nebula Front", threat: 56, reward: { credits: 2100, materials: 60 }, description: "Seal phase breaches before the Conflux arrives." },
+        { id: "m3", name: "Echo Citadel", region: "Serris Expanse", threat: 71, reward: { credits: 3200, materials: 90 }, description: "Board the citadel and recover the lost attunement core." },
+      ],
+      codex: [
+        { id: "doctrine", title: "Vanguard Doctrine", summary: "Maintain initiative, cut the head, control the field.", detail: "Vanguard squads prioritize tempo and decisive plays. Every encounter opens with a spike turn that sets the tone for the skirmish. Protect morale and sustain to preserve tempo." },
+        { id: "factions", title: "Factions", summary: "Known actors across the Fringe.", detail: "The Conflux extends from the Rift, wielding wave-based psionic armaments. The Guild of Silica trades in hybrid synth tech. Fringe Corsairs test defenses weekly." },
+        { id: "systems", title: "Systems", summary: "Progression, loadout, and economy fundamentals.", detail: "Earn XP through missions and drills, invest in trait nodes for multiplicative growth, and balance spend between arsenal upkeep, ship upgrades, and alliance favors." },
+      ],
+      objectives: [
+        { id: "briefing", title: "Review Carina Relay Briefing", status: "ready", description: "Read the mission dossier and ready the squad." },
+        { id: "loadout", title: "Optimize Captain Loadout", status: "progress", description: "Slot one defensive and one utility module." },
+        { id: "drill", title: "Run Combat Drill", status: "ready", description: "Complete at least one simulation round." },
+      ],
+      settings: {
+        hints: true,
+        battleAnimations: true,
+        autosave: true,
+        controllerLayout: "smart"
+      },
+      qa: {
+        lastRun: null,
+        checks: [],
+      },
+      battle: {
+        encounter: null,
+        log: [],
+      },
+      lastSaved: now(),
+    };
 
-      const codexEntries = [
-        { title: 'Genesis Protocol', body: 'A rapid briefing covering controls, objectives, and the stakes for stabilizing the Astral Veil.' },
-        { title: 'Sky Citadel', body: 'The airborne tutorial hub. Zero fail states, maximum coaching, instant regroup points.' },
-        { title: 'Anomaly Classification', body: 'Amber → Crimson → Obsidian tiers denote danger, reward, and recommended power bands.' },
-        { title: 'Council Ledger', body: 'Earned renown discounts premium vendors and unlocks narrative interludes at rest sites.' }
-      ];
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return structuredClone(defaultState);
+        const data = JSON.parse(raw);
+        return { ...structuredClone(defaultState), ...data };
+      } catch (error) {
+        console.warn("Failed to load state", error);
+        return structuredClone(defaultState);
+      }
+    }
 
-      const baseSkills = [
-        { id: 'valor', name: 'Valor Cascade', rank: 2, maxRank: 5, description: '+8% damage per rank and barrier equal to 10% of dealt damage.', cost: 1 },
-        { id: 'focus', name: 'Mind Prism', rank: 1, maxRank: 5, description: '+10 focus and unlocks signature skill at rank 3.', cost: 1 },
-        { id: 'tactics', name: 'Tactical Rewrite', rank: 1, maxRank: 4, description: 'First guard reflects 30% damage and restores stamina.', cost: 2 }
-      ];
+    function saveState(state) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      } catch (error) {
+        console.warn("Failed to persist state", error);
+      }
+    }
 
-      const baseInventory = [
-        { id: 'starforged-saber', name: 'Starforged Saber', type: 'weapon', slot: 'weapon', rarity: 'Epic', attack: 18, defense: 4, description: 'Signature blade with focus acceleration on opening turns.', equipped: true },
-        { id: 'aegis-coat', name: 'Aegis Coat', type: 'armor', slot: 'armor', rarity: 'Legendary', defense: 22, description: 'Adaptive plating that converts excess focus into flat damage reduction.', equipped: true },
-        { id: 'seeker-band', name: 'Seeker Band', type: 'trinket', slot: 'trinket', rarity: 'Rare', focus: 8, description: 'Amplifies scouting range and refunds stamina on victories.', equipped: true },
-        { id: 'momentum-stim', name: 'Momentum Stimulant', type: 'consumable', rarity: 'Uncommon', effect: { hp: 35, stamina: 20 }, description: 'Restore vitality mid-fight to keep tempo.' },
-        { id: 'ion-grenade', name: 'Ionized Shock Bomb', type: 'consumable', rarity: 'Rare', effect: { damage: 28 }, description: 'Heavy area damage that weakens shields for a round.' },
-        { id: 'survey-drone', name: 'Survey Drone', type: 'gadget', rarity: 'Uncommon', description: 'Reveals hidden nodes and awards intel XP.' }
-      ];
+    const state = loadState();
 
-      const mapNodes = [
-        { id: 'academy', name: 'Sky Citadel Academy', type: 'story', status: 'available', description: 'Orientation mission delivering XP, gear tokens, and narration.', rewards: '+150 XP • +1 Skill Point', action: 'Enter Briefing' },
-        { id: 'market', name: 'Aether Market', type: 'shop', status: 'available', description: 'Council-sponsored vendors with curated starter bundles.', rewards: 'Discounted bundles', action: 'Open Market' },
-        { id: 'anomaly', name: 'Amber Anomaly', type: 'battle', status: 'available', description: 'Intro combat scenario with generous forgiveness.', rewards: '+220 XP • +160 Gold • Epic drop chance', action: 'Engage' },
-        { id: 'camp', name: 'Everlight Camp', type: 'rest', status: 'locked', description: 'Unlocks after stabilizing the anomaly. Restores HP/Stamina and opens banter scenes.', rewards: 'Full heal • Dialogue unlock', action: 'Return Later' }
-      ];
+    const listeners = new Set();
+    function emit(change) {
+      listeners.forEach((fn) => fn(state, change));
+      if (state.settings.autosave) {
+        state.lastSaved = now();
+        saveState(state);
+        renderSavePreview();
+        document.querySelector('#autosave-indicator').textContent = "saved";
+        setTimeout(() => {
+          document.querySelector('#autosave-indicator').textContent = "ready";
+        }, 1200);
+      }
+    }
 
-      const quests = [
-        { id: 'quest-0', title: 'Attend the Academy Briefing', detail: 'Complete onboarding to earn your starter badge.', reward: '+150 XP', status: 'complete' },
-        { id: 'quest-1', title: 'Neutralize the Amber Anomaly', detail: 'Win your first battle and secure containment.', reward: '+220 XP, +160 Gold', status: 'active' },
-        { id: 'quest-2', title: 'Report to the Council', detail: 'Deliver anomaly data to raise your council ledger.', reward: 'Unlocks Rest Node', status: 'pending' }
-      ];
+    function onState(cb) {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    }
 
-      const defaultState = () => ({
-        version: 1,
-        qualityScore: 93,
-        player: {
-          name: 'Aria Vanguard',
-          title: 'Veilbreak Initiate',
-          level: 5,
-          xp: 1450,
-          nextLevelXp: 1800,
-          gold: 320,
-          skillPoints: 3,
-          stats: {
-            hp: { current: 148, max: 180 },
-            stamina: { current: 72, max: 90 },
-            focus: { current: 40, max: 40 },
-            attack: 34,
-            defense: 26,
-            resolve: 22,
-            speed: 18
-          }
-        },
-        skills: baseSkills.map(skill => ({ ...skill })),
-        inventory: baseInventory.map(item => ({ ...item })),
-        quests: quests.map(quest => ({ ...quest })),
-        map: { current: 'academy', nodes: mapNodes.map(node => ({ ...node })) },
-        battle: null,
-        settings: { difficulty: 'Standard', music: true, sfx: true, hints: true, autosave: true },
-        codex: codexEntries.map(entry => ({ ...entry })),
-        telemetry: { battlesWon: 0, itemsUsed: 0, restUnlock: false },
-        lastAutosave: null
+    function toast(message, options = {}) {
+      const layer = document.querySelector('.toast-layer');
+      const toastEl = document.createElement('div');
+      toastEl.className = 'toast';
+      toastEl.innerHTML = `<strong>${message}</strong><button aria-label="Dismiss">Dismiss</button>`;
+      if (options.variant) {
+        toastEl.dataset.variant = options.variant;
+      }
+      const remove = () => {
+        toastEl.remove();
+      };
+      toastEl.querySelector('button').addEventListener('click', remove);
+      layer.appendChild(toastEl);
+      setTimeout(remove, options.duration ?? 4200);
+    }
+
+    function readinessScore() {
+      const completion = state.objectives.reduce((acc, objective) => {
+        return acc + (objective.status === 'complete' ? 1 : objective.status === 'progress' ? 0.6 : 0.2);
+      }, 0) / state.objectives.length;
+      const squad = state.squad.reduce((acc, member) => acc + member.readiness, 0) / state.squad.length;
+      return Math.round((completion * 55) + (squad * 0.35) + (state.captain.stats.morale * 0.1));
+    }
+
+    function readinessTier(score) {
+      if (score >= 95) return "Prime Launch";
+      if (score >= 88) return "Combat Ready";
+      if (score >= 75) return "Needs Review";
+      return "Grounded";
+    }
+
+    function renderDashboard() {
+      const score = readinessScore();
+      document.querySelector('#readiness-bar').style.width = `${Math.min(score, 100)}%`;
+      document.querySelector('#readiness-score').textContent = score;
+      document.querySelector('#readiness-tier').textContent = readinessTier(score);
+      const cta = score >= 95 ? "All launch gates clear. Consider escalating to Conflux theatre." : score >= 88 ? "Minimal polishing required. Validate squad comps." : "Complete outstanding objectives to restore readiness.";
+      document.querySelector('#readiness-cta').textContent = cta;
+      const list = document.querySelector('#objective-list');
+      list.innerHTML = '';
+      state.objectives.forEach((objective) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <header>
+            <strong>${objective.title}</strong>
+            <span class="pill">${objective.status}</span>
+          </header>
+          <p class="muted">${objective.description}</p>
+        `;
+        list.appendChild(item);
       });
+    }
 
-      const stateKey = 'ultimate-rpg-a+++';
-      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
-      const loadState = () => {
-        try {
-          const raw = localStorage.getItem(stateKey);
-          if (!raw) return defaultState();
-          const parsed = JSON.parse(raw);
-          return { ...defaultState(), ...parsed };
-        } catch (error) {
-          console.warn('Failed to load save state', error);
-          return defaultState();
-        }
-      };
-
-      let state = loadState();
-
-      const pushToast = (message, tone = 'info') => {
-        const wrap = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = `toast ${tone}`;
-        toast.textContent = message;
-        wrap.appendChild(toast);
-        setTimeout(() => toast.remove(), 4200);
-      };
-
-      const persistState = (message = 'Progress saved') => {
-        try {
-          localStorage.setItem(stateKey, JSON.stringify(state));
-          state.lastAutosave = new Date().toISOString();
-          updateAutosaveStatus();
-          pushToast(message, 'success');
-        } catch (error) {
-          console.error(error);
-          pushToast('Unable to store save data in this session.', 'warn');
-        }
-      };
-
-      const navButtons = Array.from(document.querySelectorAll('.nav-btn'));
-      const screens = Array.from(document.querySelectorAll('.screen'));
-
-      const setScreen = target => {
-        screens.forEach(section => section.classList.toggle('active', section.id === target));
-        navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.target === target));
-        document.querySelector('.app').dataset.screen = target;
-        if (target === 'battle' && !state.battle) {
-          pushToast('Choose a battle node on the map to engage.', 'info');
-        }
-      };
-
-      navButtons.forEach(btn => btn.addEventListener('click', () => setScreen(btn.dataset.target)));
-      document.getElementById('quick-open-inventory').addEventListener('click', () => setScreen('inventory'));
-      document.getElementById('quick-open-codex').addEventListener('click', () => setScreen('codex'));
-      document.getElementById('quick-start-mission').addEventListener('click', () => {
-        const anomaly = state.map.nodes.find(node => node.id === 'anomaly');
-        if (anomaly) {
-          setScreen('map');
-          deployMapNode(anomaly);
-        }
-      });
-      document.getElementById('quick-autosave').addEventListener('click', () => persistState('Manual autosave complete'));
-
-      const buildStatBar = (label, value, max, kind) => `
+    function renderCharacter() {
+      const profile = document.querySelector('#captain-profile');
+      profile.innerHTML = `
         <div>
-          <div class="top">
-            <strong>${label}</strong>
-            <span class="muted">${value}/${max}</span>
-          </div>
-          <div class="stat-bar" data-kind="${kind}">
-            <span style="width:${(value / max) * 100}%"></span>
-          </div>
+          <strong>${state.captain.name}</strong>
+          <p class="muted">${state.captain.rank}</p>
+          <p>${state.captain.biography}</p>
+        </div>
+        <div class="stack">
+          ${Object.entries(state.captain.stats).map(([key, value]) => {
+            const label = key.charAt(0).toUpperCase() + key.slice(1);
+            return `<div class="stat-row"><span>${label}</span><strong>${value}</strong></div>`;
+          }).join('')}
         </div>
       `;
+      const squadList = document.querySelector('#squad-list');
+      squadList.innerHTML = '';
+      state.squad.forEach((member) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <header>
+            <strong>${member.name}</strong>
+            <span class="pill">${member.role}</span>
+          </header>
+          <p class="muted">Readiness ${member.readiness}% • Bond ${member.bond}%</p>
+          <p>Skills: ${member.skills.join(', ')}</p>
+        `;
+        squadList.appendChild(item);
+      });
+    }
 
-      const updateQualityScore = () => {
-        const completed = state.quests.filter(q => q.status === 'complete').length;
-        const total = state.quests.length;
-        const battleReadiness = state.battle ? 100 : 92;
-        const autosaveFactor = state.settings.autosave ? 100 : 70;
-        const score = Math.round((completed / total) * 30 + battleReadiness * 0.35 + autosaveFactor * 0.2 + 28);
-        state.qualityScore = clamp(score, 82, 100);
-        document.getElementById('quality-pill').textContent = `Quality Score: ${state.qualityScore}%`;
-      };
+    function renderInventory() {
+      const loadout = document.querySelector('#loadout-list');
+      loadout.innerHTML = '';
+      Object.entries(state.captain.loadout).forEach(([slot, item]) => {
+        const el = document.createElement('div');
+        el.className = 'list-item';
+        el.innerHTML = `
+          <header>
+            <strong>${slot.toUpperCase()}</strong>
+            <button class="btn" data-slot="${slot}" data-action="unequip">Unequip</button>
+          </header>
+          <p>${item}</p>
+        `;
+        loadout.appendChild(el);
+      });
+      const inventoryList = document.querySelector('#inventory-list');
+      inventoryList.innerHTML = '';
+      state.inventory.stowage.forEach((item) => {
+        const el = document.createElement('div');
+        el.className = 'list-item';
+        el.innerHTML = `
+          <header>
+            <strong>${item.name}</strong>
+            <button class="btn" data-item="${item.id}" data-action="equip">Equip</button>
+          </header>
+          <p class="muted">${item.type}</p>
+          <p>${item.effect}</p>
+        `;
+        inventoryList.appendChild(el);
+      });
+    }
 
-      const updateDashboard = () => {
-        const cards = [
-          { title: 'Hero Readiness', headline: `Level ${state.player.level} • ${state.player.title}`, body: `XP ${state.player.xp}/${state.player.nextLevelXp} · Gold ${state.player.gold}` },
-          { title: 'Featured Mission', headline: 'Amber Anomaly', body: 'Guided combat tutorial with generous rewards.' },
-          { title: 'Autosave', headline: state.lastAutosave ? new Date(state.lastAutosave).toLocaleTimeString() : 'Not recorded yet', body: state.settings.autosave ? 'Autosave triggers after every major action.' : 'Enable autosave to protect progress.' },
-          { title: 'Quality Charter', headline: `${state.qualityScore}%`, body: 'All pillars at launch grade. Clear objectives to push higher.' }
-        ];
-        const overview = document.getElementById('dashboard-overview');
-        overview.innerHTML = cards.map(card => `
-          <div class="panel slim">
-            <div class="top"><h3>${card.title}</h3></div>
-            <strong>${card.headline}</strong>
-            <p class="muted">${card.body}</p>
-          </div>
-        `).join('');
-
-        const timeline = document.getElementById('objective-timeline');
-        timeline.innerHTML = state.quests.map(quest => `
-          <div class="list-item">
-            <div class="top">
-              <strong>${quest.title}</strong>
-              <span class="badge ${quest.status === 'complete' ? 'success' : quest.status === 'active' ? 'gold' : 'warn'}">${quest.status}</span>
-            </div>
-            <p>${quest.detail}</p>
-            <p class="muted">Reward: ${quest.reward}</p>
-          </div>
-        `).join('');
-      };
-
-      const applySkillBonus = skill => {
-        switch (skill.id) {
-          case 'valor':
-            state.player.stats.attack += 2;
-            break;
-          case 'focus':
-            state.player.stats.focus.max += 5;
-            state.player.stats.focus.current = Math.min(state.player.stats.focus.max, state.player.stats.focus.current + 5);
-            break;
-          case 'tactics':
-            state.player.stats.defense += 3;
-            break;
-        }
-      };
-
-      const updateCharacter = () => {
-        const summary = document.getElementById('character-summary');
-        summary.innerHTML = `
-          <div class="panel slim">
-            <h3>Identity</h3>
-            <p><strong>${state.player.name}</strong></p>
-            <p class="muted">${state.player.title}</p>
-            <div class="pill">Level ${state.player.level}</div>
-          </div>
-          <div class="panel slim">
-            <h3>Vitals</h3>
-            ${buildStatBar('HP', state.player.stats.hp.current, state.player.stats.hp.max, 'hp')}
-            ${buildStatBar('Stamina', state.player.stats.stamina.current, state.player.stats.stamina.max, 'stamina')}
-            ${buildStatBar('Focus', state.player.stats.focus.current, state.player.stats.focus.max, 'focus')}
-          </div>
-          <div class="panel slim">
-            <h3>Core Stats</h3>
-            <p>Attack: <strong>${state.player.stats.attack}</strong></p>
-            <p>Defense: <strong>${state.player.stats.defense}</strong></p>
-            <p>Resolve: <strong>${state.player.stats.resolve}</strong></p>
-            <p>Speed: <strong>${state.player.stats.speed}</strong></p>
-          </div>
-          <div class="panel slim">
-            <h3>Resources</h3>
-            <p>Gold: <strong>${state.player.gold}</strong></p>
-            <p>Skill Points: <strong>${state.player.skillPoints}</strong></p>
-            <button class="btn primary" id="spend-skill-points" ${state.player.skillPoints <= 0 ? 'disabled' : ''}>Allocate Skill Point</button>
+    function renderMap() {
+      const container = document.querySelector('#map-cards');
+      container.innerHTML = '';
+      state.missions.forEach((mission) => {
+        const threatTone = mission.threat >= 70 ? 'danger' : mission.threat >= 50 ? 'warning' : 'success';
+        const el = document.createElement('div');
+        el.className = 'panel tight';
+        el.innerHTML = `
+          <div class="pill" style="background: var(--accent-soft); color: var(--accent);">${mission.region}</div>
+          <h3>${mission.name}</h3>
+          <p>${mission.description}</p>
+          <p class="muted">Threat <strong style="color: var(--${threatTone});">${mission.threat}</strong> • Reward ${mission.reward.credits}c / ${mission.reward.materials}m</p>
+          <div class="actions">
+            <button class="btn primary" data-mission="${mission.id}" data-action="deploy">Deploy</button>
+            <button class="btn" data-mission="${mission.id}" data-action="pin">Pin</button>
           </div>
         `;
+        container.appendChild(el);
+      });
+    }
 
-        const grid = document.getElementById('skill-grid');
-        grid.innerHTML = '';
-        state.skills.forEach(skill => {
-          const card = document.createElement('div');
-          card.className = 'list-item';
-          card.innerHTML = `
-            <div class="top">
-              <strong>${skill.name}</strong>
-              <span class="pill">Rank ${skill.rank}/${skill.maxRank}</span>
-            </div>
-            <p class="muted">${skill.description}</p>
-            <button class="btn" data-upgrade="${skill.id}" ${skill.rank >= skill.maxRank || state.player.skillPoints < skill.cost ? 'disabled' : ''}>Upgrade (Cost ${skill.cost})</button>
-          `;
-          grid.appendChild(card);
-        });
-
-        grid.querySelectorAll('[data-upgrade]').forEach(button => {
-          button.addEventListener('click', () => {
-            const id = button.dataset.upgrade;
-            const skill = state.skills.find(s => s.id === id);
-            if (!skill || skill.rank >= skill.maxRank || state.player.skillPoints < skill.cost) return;
-            skill.rank += 1;
-            state.player.skillPoints -= skill.cost;
-            applySkillBonus(skill);
-            pushToast(`${skill.name} advanced to rank ${skill.rank}!`, 'success');
-            render();
-            persistState('Skill upgrade saved');
-          });
-        });
-
-        const spendBtn = document.getElementById('spend-skill-points');
-        if (spendBtn) {
-          spendBtn.addEventListener('click', () => pushToast('Select a skill card to upgrade.', 'info'));
-        }
-      };
-
-      const equippedBySlot = slot => state.inventory.find(item => item.slot === slot && item.equipped);
-
-      const updateInventory = () => {
-        const equippedGrid = document.getElementById('equipped-grid');
-        equippedGrid.innerHTML = '';
-        ['weapon', 'armor', 'trinket'].forEach(slot => {
-          const equipped = equippedBySlot(slot);
-          const panel = document.createElement('div');
-          panel.className = 'panel slim';
-          panel.innerHTML = equipped ? `
-            <h3>${slot.toUpperCase()}</h3>
-            <strong>${equipped.name}</strong>
-            <p class="muted">${equipped.description}</p>
-          ` : `
-            <h3>${slot.toUpperCase()}</h3>
-            <p class="muted">No item equipped.</p>
-          `;
-          equippedGrid.appendChild(panel);
-        });
-
-        const list = document.getElementById('inventory-list');
-        list.innerHTML = '';
-        state.inventory.forEach(item => {
-          const element = document.createElement('div');
-          element.className = 'list-item';
-          element.innerHTML = `
-            <div class="top">
-              <strong>${item.name}</strong>
-              <span class="pill">${item.rarity}</span>
-            </div>
-            <p class="muted">${item.description}</p>
-            <div class="inline-actions">
-              ${item.slot ? `<button class="btn" data-equip="${item.id}">${item.equipped ? 'Equipped' : 'Equip'}</button>` : ''}
-              ${item.type === 'consumable' ? `<button class="btn" data-use="${item.id}">Use</button>` : ''}
-            </div>
-          `;
-          list.appendChild(element);
-        });
-
-        list.querySelectorAll('[data-equip]').forEach(btn => btn.addEventListener('click', () => equipItem(btn.dataset.equip)));
-        list.querySelectorAll('[data-use]').forEach(btn => btn.addEventListener('click', () => useConsumable(btn.dataset.use)));
-      };
-
-      const equipItem = id => {
-        const item = state.inventory.find(i => i.id === id);
-        if (!item || !item.slot) return;
-        state.inventory.forEach(inv => { if (inv.slot === item.slot) inv.equipped = false; });
-        item.equipped = true;
-        pushToast(`${item.name} equipped!`, 'success');
-        render();
-        persistState(`${item.name} equipped`);
-      };
-
-      const useConsumable = id => {
-        const index = state.inventory.findIndex(item => item.id === id);
-        if (index === -1) return;
-        const item = state.inventory[index];
-        if (item.type !== 'consumable') return;
-        const effect = item.effect || {};
-        state.player.stats.hp.current = clamp(state.player.stats.hp.current + (effect.hp || 0), 0, state.player.stats.hp.max);
-        state.player.stats.stamina.current = clamp(state.player.stats.stamina.current + (effect.stamina || 0), 0, state.player.stats.stamina.max);
-        if (state.battle && effect.damage) {
-          state.battle.enemy.hp = Math.max(0, state.battle.enemy.hp - effect.damage);
-          state.battle.log.push(`You deploy ${item.name} for ${effect.damage} bonus damage.`);
-          if (state.battle.enemy.hp === 0) {
-            concludeBattle(true);
-          }
-        }
-        state.inventory.splice(index, 1);
-        state.telemetry.itemsUsed += 1;
-        pushToast(`${item.name} consumed.`, 'success');
-        render();
-        persistState(`${item.name} used`);
-      };
-
-      const updateMap = () => {
-        const grid = document.getElementById('map-grid');
-        grid.innerHTML = '';
-        const template = document.getElementById('map-node-template');
-        state.map.nodes.forEach(node => {
-          const clone = template.content.cloneNode(true);
-          const article = clone.querySelector('article');
-          article.dataset.status = node.status;
-          article.dataset.type = node.type;
-          clone.querySelector('[data-map-name]').textContent = node.name;
-          const badge = clone.querySelector('[data-map-type]');
-          badge.textContent = `${node.type.toUpperCase()} NODE`;
-          badge.classList.add(node.type === 'battle' ? 'warn' : node.type === 'shop' ? 'gold' : node.type === 'rest' ? 'success' : '');
-          clone.querySelector('[data-map-description]').textContent = `${node.description} Rewards: ${node.rewards}`;
-          const button = clone.querySelector('[data-map-action]');
-          button.textContent = node.action;
-          button.disabled = node.status === 'locked';
-          button.addEventListener('click', event => {
-            event.stopPropagation();
-            deployMapNode(node);
-          });
-          article.addEventListener('click', () => deployMapNode(node));
-          article.addEventListener('keydown', event => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              deployMapNode(node);
-            }
-          });
-          grid.appendChild(clone);
-        });
-
-        const current = state.map.nodes.find(node => node.id === state.map.current) || state.map.nodes[0];
-        const details = document.getElementById('map-details');
-        details.innerHTML = `
-          <h3>${current.name}</h3>
-          <p>${current.description}</p>
-          <p class="muted">Rewards: ${current.rewards}</p>
-          <div class="pill">Status: ${current.status}</div>
+    function renderBattle() {
+      const statePanel = document.querySelector('#battle-state');
+      const encounter = state.battle.encounter;
+      if (!encounter) {
+        statePanel.innerHTML = `
+          <p>No engagement running.</p>
+          <p class="muted">Hit Advance Round to generate a live scenario. Squad composition mirrors your current roster.</p>
         `;
-      };
+      } else {
+        statePanel.innerHTML = `
+          <div class="grid-2">
+            <div>
+              <h3>Allies</h3>
+              ${encounter.allies.map((ally) => `<p>${ally.name} – HP ${ally.hp} / ${ally.maxHp}</p>`).join('')}
+            </div>
+            <div>
+              <h3>Enemies</h3>
+              ${encounter.enemies.map((enemy) => `<p>${enemy.name} – HP ${enemy.hp} / ${enemy.maxHp}</p>`).join('')}
+            </div>
+          </div>
+          <p class="muted">Round ${encounter.round} • Momentum ${encounter.momentum > 0 ? '+' : ''}${encounter.momentum}</p>
+        `;
+      }
+      const log = document.querySelector('#battle-log');
+      log.innerHTML = '';
+      state.battle.log.slice(-12).forEach((entry) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `<header><strong>${entry.title}</strong><span class="pill">${entry.type}</span></header><p>${entry.body}</p>`;
+        log.appendChild(item);
+      });
+    }
 
-      const deployMapNode = node => {
-        state.map.current = node.id;
-        switch (node.type) {
-          case 'battle':
-            startBattle(node);
-            break;
-          case 'shop':
-            pushToast('Market interface coming online. Prices scaled for initiates.', 'info');
-            break;
-          case 'story':
-            pushToast('Briefing complete. Objectives updated.', 'success');
-            markQuestComplete('quest-0');
-            break;
-          case 'rest':
-            if (node.status === 'locked') {
-              pushToast('Secure the Amber Anomaly to unlock this rest site.', 'warn');
-              return;
-            }
-            state.player.stats.hp.current = state.player.stats.hp.max;
-            state.player.stats.stamina.current = state.player.stats.stamina.max;
-            pushToast('Fully rested and ready for the next mission!', 'success');
-            break;
+    function renderCodex() {
+      const list = document.querySelector('#codex-list');
+      list.innerHTML = '';
+      state.codex.forEach((entry) => {
+        const el = document.createElement('details');
+        el.className = 'list-item';
+        el.innerHTML = `<summary><strong>${entry.title}</strong> – <span class="muted">${entry.summary}</span></summary><p>${entry.detail}</p>`;
+        list.appendChild(el);
+      });
+    }
+
+    function renderSettings() {
+      const list = document.querySelector('#settings-list');
+      list.innerHTML = '';
+      const settings = [
+        { key: 'hints', label: 'Show Guidance Hints', type: 'boolean' },
+        { key: 'battleAnimations', label: 'Battle Animations', type: 'boolean' },
+        { key: 'autosave', label: 'Autosave', type: 'boolean' },
+        { key: 'controllerLayout', label: 'Controller Layout', type: 'select', options: [
+          { value: 'smart', label: 'Smart Navigation' },
+          { value: 'grid', label: 'Grid Focus' },
+          { value: 'minimal', label: 'Minimal HUD' },
+        ]},
+      ];
+      settings.forEach((setting) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `<header><strong>${setting.label}</strong></header>`;
+        if (setting.type === 'boolean') {
+          const toggle = document.createElement('button');
+          toggle.className = 'btn';
+          toggle.dataset.action = 'toggle-setting';
+          toggle.dataset.setting = setting.key;
+          toggle.textContent = state.settings[setting.key] ? 'Enabled' : 'Disabled';
+          item.appendChild(toggle);
+        } else if (setting.type === 'select') {
+          const select = document.createElement('select');
+          select.dataset.setting = setting.key;
+          setting.options.forEach((option) => {
+            const opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.label;
+            if (state.settings[setting.key] === option.value) opt.selected = true;
+            select.appendChild(opt);
+          });
+          select.addEventListener('change', (event) => {
+            state.settings[setting.key] = event.target.value;
+            emit({ type: 'settings:update', key: setting.key });
+            toast(`${setting.label} set to ${event.target.selectedOptions[0].textContent}`);
+          });
+          item.appendChild(select);
         }
-        updateMap();
-        render();
-      };
+        list.appendChild(item);
+      });
+    }
 
-      const markQuestComplete = questId => {
-        const quest = state.quests.find(q => q.id === questId);
-        if (quest && quest.status !== 'complete') {
-          quest.status = 'complete';
-          state.player.xp += 150;
-          pushToast(`${quest.title} complete!`, 'success');
-          updateQualityScore();
-        }
-      };
+    function renderSavePreview() {
+      document.querySelector('#save-preview').value = JSON.stringify({ ...state, battle: undefined, qa: undefined }, null, 2);
+    }
 
-      const startBattle = node => {
-        state.battle = {
-          origin: node.id,
-          enemy: { name: 'Amber Warden', hp: 120, maxHp: 120, attack: 24, defense: 16 },
-          playerGuard: false,
-          turn: 'player',
-          log: [`Deployment initiated at ${node.name}.`],
-          rewards: { xp: 220, gold: 160, loot: 'Prismatic Core' }
+    function renderQA() {
+      const checks = document.querySelector('#qa-checks');
+      checks.innerHTML = '';
+      state.qa.checks.forEach((check) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+          <header>
+            <strong>${check.name}</strong>
+            <span class="pill">${check.status}</span>
+          </header>
+          <p>${check.detail}</p>
+        `;
+        checks.appendChild(item);
+      });
+      const output = state.qa.lastRun ? `${state.qa.lastRun.name} @ ${state.qa.lastRun.timestamp}\n${state.qa.lastRun.output.join('\n')}` : 'No suite executed.';
+      document.querySelector('#qa-output').value = output;
+    }
+
+    function updateQA() {
+      const score = readinessScore();
+      const checks = [];
+      checks.push({
+        name: 'Readiness >= 90',
+        status: score >= 90 ? 'pass' : 'warn',
+        detail: score >= 90 ? 'Launch readiness confirmed.' : 'Complete objectives to raise readiness.',
+      });
+      const pinned = state.objectives.filter((objective) => objective.status !== 'complete');
+      checks.push({
+        name: 'Outstanding Objectives',
+        status: pinned.length ? 'warn' : 'pass',
+        detail: pinned.length ? `${pinned.length} remaining objectives.` : 'All mission objectives complete.',
+      });
+      const resources = state.inventory.credits >= 1000 && state.inventory.materials >= 50;
+      checks.push({
+        name: 'Economy Reserve',
+        status: resources ? 'pass' : 'warn',
+        detail: resources ? 'Sustainable reserves on hand.' : 'Acquire more credits/materials before escalation.',
+      });
+      state.qa.checks = checks;
+    }
+
+    function ensureBattleEncounter() {
+      if (!state.battle.encounter) {
+        const encounter = {
+          round: 0,
+          momentum: 0,
+          allies: state.squad.map((member) => ({ name: member.name, hp: 80 + Math.floor(Math.random() * 20), maxHp: 120 })),
+          enemies: [
+            { name: 'Conflux Wraith', hp: 140, maxHp: 140 },
+            { name: 'Phase Reaver', hp: 120, maxHp: 120 },
+          ],
         };
-        setScreen('battle');
-        updateBattle();
-        pushToast('Battle started – your move.', 'info');
-      };
+        state.battle.encounter = encounter;
+        state.battle.log = [];
+      }
+    }
 
-      const updateBattle = () => {
-        const overview = document.getElementById('battle-overview');
-        const log = document.getElementById('battle-log');
-        const actions = document.getElementById('battle-actions');
+    function battleStep() {
+      ensureBattleEncounter();
+      const encounter = state.battle.encounter;
+      encounter.round += 1;
+      const ally = encounter.allies[Math.floor(Math.random() * encounter.allies.length)];
+      const enemy = encounter.enemies[Math.floor(Math.random() * encounter.enemies.length)];
+      const damage = Math.floor(Math.random() * 24) + 18;
+      enemy.hp = Math.max(0, enemy.hp - damage);
+      encounter.momentum += 3;
+      state.battle.log.push({ title: `Round ${encounter.round}`, type: 'ally', body: `${ally.name} strikes ${enemy.name} for ${damage}.` });
+      if (enemy.hp === 0) {
+        state.battle.log.push({ title: 'Enemy Down', type: 'system', body: `${enemy.name} destabilized.` });
+      }
+      const livingEnemies = encounter.enemies.filter((unit) => unit.hp > 0);
+      if (!livingEnemies.length) {
+        state.battle.log.push({ title: 'Victory', type: 'system', body: 'Encounter resolved. Momentum channel stabilized.' });
+        state.battle.encounter = null;
+        toast('Combat drill complete. Rewards queued.', { variant: 'success' });
+        grantRewards({ credits: 300, materials: 20 });
+        return;
+      }
+      const counterTarget = encounter.allies[Math.floor(Math.random() * encounter.allies.length)];
+      const counterDamage = Math.floor(Math.random() * 18) + 12;
+      counterTarget.hp = Math.max(0, counterTarget.hp - counterDamage);
+      encounter.momentum -= 2;
+      state.battle.log.push({ title: `Counter`, type: 'enemy', body: `${livingEnemies[0].name} retaliates for ${counterDamage} damage on ${counterTarget.name}.` });
+      emit({ type: 'battle:step' });
+    }
 
-        if (!state.battle) {
-          overview.innerHTML = '<p class="muted">No active battle. Launch a mission from the map.</p>';
-          log.innerHTML = '';
-          actions.innerHTML = '';
-          return;
+    function battleReset() {
+      state.battle.encounter = null;
+      state.battle.log = [];
+      emit({ type: 'battle:reset' });
+    }
+
+    function battleAnalyze() {
+      const summary = state.battle.log.reduce((acc, entry) => {
+        if (!acc[entry.type]) acc[entry.type] = 0;
+        acc[entry.type] += 1;
+        return acc;
+      }, {});
+      const report = Object.entries(summary).map(([type, count]) => `${type}: ${count}`).join(', ') || 'No events logged.';
+      toast(`Battle log – ${report}`);
+    }
+
+    function grantRewards(reward) {
+      state.inventory.credits += reward.credits;
+      state.inventory.materials += reward.materials;
+      toast(`Rewards secured: ${reward.credits} credits, ${reward.materials} materials.`, { variant: 'success' });
+      emit({ type: 'economy:reward' });
+    }
+
+    function deployMission(id) {
+      const mission = state.missions.find((mission) => mission.id === id);
+      if (!mission) return;
+      state.objectives = state.objectives.map((objective) => objective.id === 'briefing' ? { ...objective, status: 'complete' } : objective);
+      toast(`${mission.name} underway. Threat ${mission.threat}.`, { variant: 'info' });
+      grantRewards(mission.reward);
+      emit({ type: 'mission:deployed', id });
+    }
+
+    function pinMission(id) {
+      state.objectives = state.objectives.map((objective) => objective.id === 'briefing' ? objective : { ...objective, status: 'progress' });
+      toast('Mission pinned to tracker.');
+      emit({ type: 'mission:pinned', id });
+    }
+
+    function equipItem(id) {
+      const itemIndex = state.inventory.stowage.findIndex((item) => item.id === id);
+      if (itemIndex === -1) return;
+      const item = state.inventory.stowage[itemIndex];
+      state.inventory.stowage.splice(itemIndex, 1);
+      state.captain.loadout.relic = item.name;
+      state.objectives = state.objectives.map((objective) => objective.id === 'loadout' ? { ...objective, status: 'complete' } : objective);
+      toast(`${item.name} equipped.`);
+      emit({ type: 'inventory:equip', id });
+    }
+
+    function unequip(slot) {
+      const current = state.captain.loadout[slot];
+      if (!current) return;
+      state.inventory.stowage.push({ id: `${slot}-${Date.now()}`, name: current, type: slot, effect: 'Stored' });
+      state.captain.loadout[slot] = 'Unassigned';
+      toast(`${slot.toUpperCase()} unequipped.`);
+      emit({ type: 'inventory:unequip', slot });
+    }
+
+    function toggleSetting(key) {
+      state.settings[key] = !state.settings[key];
+      toast(`${key} ${state.settings[key] ? 'enabled' : 'disabled'}.`);
+      emit({ type: 'settings:toggle', key });
+    }
+
+    function exportSave() {
+      const data = JSON.stringify(state, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `echoes-save-${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast('Save exported.');
+    }
+
+    function importSave(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
+          Object.assign(state, data);
+          emit({ type: 'save:import' });
+          toast('Save imported.');
+        } catch (error) {
+          toast('Import failed. Invalid file.', { variant: 'danger' });
         }
+      };
+      reader.readAsText(file);
+    }
 
-        const { enemy } = state.battle;
-        const player = state.player.stats;
-        overview.innerHTML = `
-          <div class="panel slim">
-            <h3>${state.player.name}</h3>
-            ${buildStatBar('HP', player.hp.current, player.hp.max, 'hp')}
-            ${buildStatBar('Stamina', player.stamina.current, player.stamina.max, 'stamina')}
-            ${buildStatBar('Focus', player.focus.current, player.focus.max, 'focus')}
-          </div>
-          <div class="panel slim">
-            <h3>${enemy.name}</h3>
-            ${buildStatBar('HP', enemy.hp, enemy.maxHp, 'hp')}
-            <p class="muted">Attack ${enemy.attack} • Defense ${enemy.defense}</p>
-          </div>
-        `;
+    function resetSave() {
+      Object.keys(state).forEach((key) => {
+        state[key] = structuredClone(defaultState)[key];
+      });
+      emit({ type: 'save:reset' });
+      toast('Campaign reset.');
+    }
 
-        log.innerHTML = '';
-        state.battle.log.slice(-10).forEach(entry => {
-          const line = document.createElement('p');
-          line.textContent = entry;
-          log.appendChild(line);
+    function runSuite(name, runner) {
+      const result = runner();
+      state.qa.lastRun = { name, output: result.output, timestamp: new Date().toLocaleTimeString() };
+      toast(`${name} suite complete.`);
+      emit({ type: 'qa:suite', name });
+    }
+
+    const suites = {
+      smoke() {
+        const output = [];
+        output.push(`Squad size: ${state.squad.length}`);
+        output.push(`Inventory items: ${state.inventory.stowage.length}`);
+        output.push(`Readiness: ${readinessScore()}`);
+        return { output };
+      },
+      campaign() {
+        const output = [];
+        state.missions.forEach((mission) => {
+          output.push(`${mission.name}: threat ${mission.threat}, reward ${mission.reward.credits}`);
         });
-        log.scrollTop = log.scrollHeight;
+        return { output };
+      },
+      economy() {
+        const output = [];
+        const burnRate = Math.round((state.inventory.credits / 3) * 0.42);
+        output.push(`Credits: ${state.inventory.credits}`);
+        output.push(`Materials: ${state.inventory.materials}`);
+        output.push(`Projected burn: ${burnRate}`);
+        return { output };
+      },
+    };
 
-        actions.innerHTML = '';
-        const palette = [
-          { id: 'attack', label: 'Attack', disabled: false },
-          { id: 'skill', label: 'Signature Skill', disabled: state.player.stats.stamina.current < 20 },
-          { id: 'defend', label: 'Guard', disabled: false },
-          { id: 'item', label: 'Use Item', disabled: !state.inventory.some(item => item.type === 'consumable') }
-        ];
-        palette.forEach(action => {
-          const btn = document.createElement('button');
-          btn.className = 'btn primary';
-          btn.textContent = action.label;
-          btn.disabled = action.disabled || state.battle.turn !== 'player';
-          btn.addEventListener('click', () => battleAction(action.id));
-          actions.appendChild(btn);
-        });
-      };
+    function switchScreen(id) {
+      document.querySelectorAll('.screen').forEach((screen) => {
+        screen.classList.toggle('active', screen.id === id);
+      });
+      document.querySelectorAll('.nav-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.screen === id);
+      });
+      const active = document.getElementById(id);
+      if (active) active.focus({ preventScroll: true });
+    }
 
-      const battleAction = action => {
-        if (!state.battle || state.battle.turn !== 'player') return;
-        const enemy = state.battle.enemy;
-        const player = state.player.stats;
-        let message = '';
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
+      btn.addEventListener('click', () => switchScreen(btn.dataset.screen));
+    });
 
-        switch (action) {
-          case 'attack': {
-            const damage = Math.max(8, player.attack - Math.floor(enemy.defense / 3));
-            enemy.hp = Math.max(0, enemy.hp - damage);
-            message = `You strike for ${damage} damage.`;
-            break;
-          }
-          case 'skill': {
-            if (player.stamina.current < 20) {
-              pushToast('Not enough stamina for the Signature Skill.', 'warn');
-              return;
-            }
-            player.stamina.current -= 20;
-            const damage = Math.max(18, Math.round(player.attack * 1.4) - Math.floor(enemy.defense / 4));
-            enemy.hp = Math.max(0, enemy.hp - damage);
-            message = `Signature Skill unleashed for ${damage} damage!`;
-            break;
-          }
-          case 'defend': {
-            state.battle.playerGuard = true;
-            player.stamina.current = clamp(player.stamina.current + 12, 0, player.stamina.max);
-            message = 'You guard and recover stamina.';
-            break;
-          }
-          case 'item': {
-            const consumable = state.inventory.find(item => item.type === 'consumable');
-            if (!consumable) {
-              pushToast('No consumables available.', 'warn');
-              return;
-            }
-            useConsumable(consumable.id);
-            message = `You deploy ${consumable.name}.`;
-            break;
-          }
-        }
+    document.querySelector('main').addEventListener('click', (event) => {
+      const action = event.target.closest('[data-action]');
+      if (!action) return;
+      const { action: type } = action.dataset;
+      if (type === 'start-mission') {
+        switchScreen('map');
+        toast('Navigate to the Star Chart to deploy.');
+      }
+      if (type === 'open-battle') switchScreen('battle');
+      if (type === 'review-codex') switchScreen('codex');
+      if (type === 'open-qa') switchScreen('qa');
+      if (type === 'deploy') deployMission(action.dataset.mission);
+      if (type === 'pin') pinMission(action.dataset.mission);
+      if (type === 'equip') equipItem(action.dataset.item);
+      if (type === 'unequip') unequip(action.dataset.slot);
+      if (type === 'toggle-setting') toggleSetting(action.dataset.setting);
+      if (type === 'save-export') exportSave();
+      if (type === 'save-reset') resetSave();
+      if (type === 'battle-step') battleStep();
+      if (type === 'battle-reset') battleReset();
+      if (type === 'battle-analyze') battleAnalyze();
+      if (type === 'qa-run-smoke') runSuite('Smoke', suites.smoke);
+      if (type === 'qa-run-campaign') runSuite('Campaign', suites.campaign);
+      if (type === 'qa-run-economy') runSuite('Economy', suites.economy);
+    });
 
-        if (message) {
-          state.battle.log.push(message);
-        }
+    document.querySelector('#save-import').addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) importSave(file);
+      event.target.value = '';
+    });
 
-        if (enemy.hp <= 0) {
-          concludeBattle(true);
-          return;
-        }
+    onState(() => {
+      updateQA();
+      renderDashboard();
+      renderCharacter();
+      renderInventory();
+      renderMap();
+      renderBattle();
+      renderCodex();
+      renderSettings();
+      renderSavePreview();
+      renderQA();
+    });
 
-        state.battle.turn = 'enemy';
-        updateBattle();
-        setTimeout(enemyTurn, 650);
-      };
-
-      const enemyTurn = () => {
-        if (!state.battle || state.battle.turn !== 'enemy') return;
-        const enemy = state.battle.enemy;
-        const player = state.player.stats;
-        const base = Math.max(6, enemy.attack - Math.floor(player.defense / 4));
-        const damage = state.battle.playerGuard ? Math.floor(base * 0.55) : base;
-        player.hp.current = clamp(player.hp.current - damage, 0, player.hp.max);
-        state.battle.log.push(`${enemy.name} hits for ${damage} damage.`);
-        state.battle.playerGuard = false;
-
-        if (player.hp.current <= 0) {
-          concludeBattle(false);
-          return;
-        }
-
-        state.battle.turn = 'player';
-        updateBattle();
-      };
-
-      const concludeBattle = victory => {
-        if (!state.battle) return;
-        const { rewards, enemy } = state.battle;
-        if (victory) {
-          state.battle.log.push(`Enemy ${enemy.name} defeated! Rewards secured.`);
-          state.player.xp += rewards.xp;
-          state.player.gold += rewards.gold;
-          state.telemetry.battlesWon += 1;
-          pushToast(`Victory! ${rewards.xp} XP and ${rewards.gold} gold earned.`, 'success');
-          const anomaly = state.map.nodes.find(node => node.id === state.battle.origin);
-          if (anomaly) anomaly.status = 'completed';
-          const camp = state.map.nodes.find(node => node.id === 'camp');
-          if (camp && camp.status === 'locked') {
-            camp.status = 'available';
-            state.telemetry.restUnlock = true;
-            pushToast('Everlight Camp unlocked. Rest now available.', 'info');
-          }
-          markQuestComplete('quest-1');
-        } else {
-          state.battle.log.push('Defeat registered. Tutorial recovery restores you to full.');
-          state.player.stats.hp.current = state.player.stats.hp.max;
-          state.player.stats.stamina.current = state.player.stats.stamina.max;
-          pushToast('Defeat logged – respawned at Sky Citadel.', 'warn');
-        }
-        state.battle.turn = 'resolved';
-        updateBattle();
-        persistState('Battle outcome saved');
-        setTimeout(() => {
-          state.battle = null;
-          updateBattle();
-          setScreen('dashboard');
-          render();
-        }, 1600);
-      };
-
-      const updateCodex = () => {
-        const grid = document.getElementById('quality-grid');
-        grid.innerHTML = qualityCharter.map(entry => `
-          <div class="quality-card">
-            <strong>${entry.pillar}</strong>
-            <p class="muted">${entry.summary}</p>
-            <ul>${entry.checks.map(check => `<li>${check}</li>`).join('')}</ul>
-          </div>
-        `).join('');
-
-        const list = document.getElementById('codex-list');
-        list.innerHTML = state.codex.map(entry => `
-          <div class="list-item">
-            <div class="top"><strong>${entry.title}</strong></div>
-            <p class="muted">${entry.body}</p>
-          </div>
-        `).join('');
-      };
-
-      const updateSettings = () => {
-        const list = document.getElementById('settings-list');
-        list.innerHTML = '';
-
-        const addToggle = (label, key) => {
-          const id = `${key}-toggle`;
-          const item = document.createElement('div');
-          item.className = 'list-item';
-          item.innerHTML = `
-            <div class="top">
-              <label for="${id}"><strong>${label}</strong></label>
-              <span class="pill">${state.settings[key] ? 'On' : 'Off'}</span>
-            </div>
-            <p class="muted">Click to toggle.</p>
-            <button class="btn" id="${id}">Toggle</button>
-          `;
-          item.querySelector('button').addEventListener('click', () => {
-            state.settings[key] = !state.settings[key];
-            pushToast(`${label} ${state.settings[key] ? 'enabled' : 'disabled'}.`, 'info');
-            render();
-            persistState(`${label} toggled`);
-          });
-          list.appendChild(item);
-        };
-
-        addToggle('Background Music', 'music');
-        addToggle('Sound Effects', 'sfx');
-        addToggle('Guided Hints', 'hints');
-        addToggle('Autosave', 'autosave');
-
-        const difficultyItem = document.createElement('div');
-        difficultyItem.className = 'list-item';
-        difficultyItem.innerHTML = `
-          <div class="top">
-            <strong>Difficulty</strong>
-            <span class="pill">${state.settings.difficulty}</span>
-          </div>
-          <p class="muted">Standard is tuned for first-time players. Escalate once you are comfortable.</p>
-          <div class="inline-actions">
-            <button class="btn" data-difficulty="Story">Story</button>
-            <button class="btn" data-difficulty="Standard">Standard</button>
-            <button class="btn" data-difficulty="Veteran">Veteran</button>
-          </div>
-        `;
-        difficultyItem.querySelectorAll('[data-difficulty]').forEach(btn => btn.addEventListener('click', () => {
-          state.settings.difficulty = btn.dataset.difficulty;
-          pushToast(`Difficulty set to ${state.settings.difficulty}.`, 'info');
-          render();
-          persistState('Difficulty updated');
-        }));
-        list.appendChild(difficultyItem);
-      };
-
-      const updateAutosaveStatus = () => {
-        const footer = document.getElementById('autosave-status');
-        footer.textContent = state.lastAutosave ? `Autosave: ${new Date(state.lastAutosave).toLocaleTimeString()}` : 'Autosave ready';
-      };
-
-      const updateFooter = () => {
-        const status = document.getElementById('footer-status');
-        status.textContent = `Battles won: ${state.telemetry.battlesWon} • Items used: ${state.telemetry.itemsUsed}`;
-      };
-
-      const render = () => {
-        updateQualityScore();
-        updateDashboard();
-        updateCharacter();
-        updateInventory();
-        updateMap();
-        updateBattle();
-        updateCodex();
-        updateSettings();
-        updateFooter();
-        updateAutosaveStatus();
-      };
-
-      render();
-      pushToast('A+++ systems online. Ready for launch.', 'success');
-    })();
+    updateQA();
+    renderDashboard();
+    renderCharacter();
+    renderInventory();
+    renderMap();
+    renderBattle();
+    renderCodex();
+    renderSettings();
+    renderSavePreview();
+    renderQA();
   </script>
 </body>
 </html>
