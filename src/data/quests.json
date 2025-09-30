@@ -1,0 +1,23 @@
+[
+  {
+    "id": "tutorial",
+    "name": "Rejoin Your Shadow",
+    "description": "Learn to swap and manage the lantern.",
+    "objectives": ["Follow the Elder", "Swap with your shadow", "Reach the shrine"],
+    "rewards": { "xp": 50, "items": [] }
+  },
+  {
+    "id": "town_help",
+    "name": "Stabilize the Town",
+    "description": "Help townsfolk prepare for the siege.",
+    "objectives": ["Speak to the smith", "Deliver fuel", "Unlock district gate"],
+    "rewards": { "xp": 120, "items": ["fuel"] }
+  },
+  {
+    "id": "dungeon_clear",
+    "name": "Clear the Lightworks",
+    "description": "Solve the puzzles and defeat the Warden.",
+    "objectives": ["Solve the mirror corridor", "Stabilize the garden", "Defeat the Warden"],
+    "rewards": { "xp": 300, "items": ["charm_debt"] }
+  }
+]

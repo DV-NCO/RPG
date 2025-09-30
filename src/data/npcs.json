@@ -1,0 +1,8 @@
+[
+  { "id": "elder", "name": "Elder Miren", "dialog": "elder_intro", "role": "quest" },
+  { "id": "smith", "name": "Forgewright", "dialog": "smith_shop", "role": "shop" },
+  { "id": "scribe", "name": "Umbral Scribe", "dialog": "scribe_lore", "role": "lore" },
+  { "id": "runner", "name": "Courier Iva", "dialog": "runner_hint", "role": "quest" },
+  { "id": "shadow", "name": "Your Shadow", "dialog": "shadow_bond", "role": "companion" },
+  { "id": "warden", "name": "Lamp Warden", "dialog": "warden_taunt", "role": "boss" }
+]
